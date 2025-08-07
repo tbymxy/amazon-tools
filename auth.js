@@ -20,55 +20,36 @@ if (window.location.pathname.endsWith('index.html') || window.location.pathname 
     const loginBtn = document.getElementById('login-btn');
     const registerBtn = document.getElementById('register-btn');
     const authErrorMessage = document.getElementById('auth-error-message');
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            loginContainer.style.display = 'none';
-            dashboardContainer.style.display = 'block';
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('logout-btn').style.display = 'inline-block';
-        } else {
-            loginContainer.style.display = 'flex';
-            dashboardContainer.style.display = 'none';
-        }
-    });
-
-    loginBtn.addEventListener('click', () => {
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        authErrorMessage.textContent = '';
-        auth.signInWithEmailAndPassword(email, password).catch(error => {
-            authErrorMessage.textContent = `登录失败: ${error.message}`;
+    
+    // 确保只在有这些元素的页面执行
+    if (loginContainer && dashboardContainer) {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginContainer.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('logout-btn').style.display = 'inline-block';
+            } else {
+                loginContainer.style.display = 'flex';
+                dashboardContainer.style.display = 'none';
+            }
         });
-    });
-
-    registerBtn.addEventListener('click', () => {
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        authErrorMessage.textContent = '';
-        auth.createUserWithEmailAndPassword(email, password).catch(error => {
-            authErrorMessage.textContent = `注册失败: ${error.message}`;
+    
+        loginBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authErrorMessage.textContent = '';
+            auth.signInWithEmailAndPassword(email, password).catch(error => {
+                authErrorMessage.textContent = `登录失败: ${error.message}`;
+            });
         });
-    });
-}
-
-// 退出登录逻辑 (在所有页面都有效)
-document.getElementById('logout-btn').addEventListener('click', () => {
-    auth.signOut().then(() => {
-        // 退出成功后，跳转回主页
-        window.location.href = 'index.html';
-    });
-});
-
-// 检查非主页的登录状态
-if (window.location.pathname.endsWith('stores.html') || window.location.pathname.endsWith('keywords.html')) {
-    auth.onAuthStateChanged(user => {
-        if (!user) {
-            // 如果未登录，跳转回主页
-            window.location.href = 'index.html';
-        } else {
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('logout-btn').style.display = 'inline-block';
-        }
-    });
-}
+    
+        registerBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authErrorMessage.textContent = '';
+            auth.createUserWithEmailAndPassword(email, password).catch(error => {
+                authErrorMessage.textContent = `注册失败: ${error.message}`;
+            });
+        });
+    }

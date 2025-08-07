@@ -207,7 +207,6 @@ function renderStoreData(data) {
         storeDataList.innerHTML = '<tr><td colspan="6">没有找到任何店铺数据。</td></tr>';
         return;
     }
-    // 修正后的渲染函数：生成表格行和单元格
     storeDataList.innerHTML = data.map(item => `
         <tr>
             <td>${item.sellerName || 'N/A'}</td>
@@ -225,7 +224,6 @@ function renderKeywordData(data) {
         keywordDataList.innerHTML = '<tr><td colspan="5">没有找到任何关键词数据。</td></tr>';
         return;
     }
-    // 修正后的渲染函数：生成表格行和单元格
     keywordDataList.innerHTML = data.map(item => `
         <tr>
             <td>${item.keyword || 'N/A'}</td>

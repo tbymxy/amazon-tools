@@ -36,13 +36,22 @@ const keywordsSection = document.getElementById('keywords-section');
 const storeDataList = document.getElementById('store-data-list');
 const storeSearchInput = document.getElementById('store-search-input');
 const storeSiteFilter = document.getElementById('store-site-filter');
+const storeTotalCount = document.getElementById('store-total-count');
+const storePagination = document.getElementById('store-pagination');
 let allStoreData = [];
+let filteredStoreData = [];
+let currentPageStore = 1;
+const itemsPerPage = 20;
 
 // 关键词数据元素
 const keywordDataList = document.getElementById('keyword-data-list');
 const keywordSearchInput = document.getElementById('keyword-search-input');
 const keywordSiteFilter = document.getElementById('keyword-site-filter');
+const keywordTotalCount = document.getElementById('keyword-total-count');
+const keywordPagination = document.getElementById('keyword-pagination');
 let allKeywordData = [];
+let filteredKeywordData = [];
+let currentPageKeyword = 1;
 
 // --- 认证状态监听器 ---
 auth.onAuthStateChanged(user => {
@@ -52,7 +61,6 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) userEmailSpan.textContent = user.email;
         if (logoutBtn) logoutBtn.style.display = 'inline-block';
         
-        // 登录后直接加载数据
         if (allStoreData.length === 0 && allKeywordData.length === 0) {
             fetchStoreData();
             fetchKeywordData();
@@ -67,42 +75,39 @@ auth.onAuthStateChanged(user => {
 
 // --- 事件监听器 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 登录/注册按钮事件
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
-            loginBtn.disabled = true; // 禁用按钮
+            loginBtn.disabled = true;
             authErrorMessage.textContent = '';
             auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
                 .catch(error => {
                     authErrorMessage.textContent = `登录失败: ${error.message}`;
                 })
                 .finally(() => {
-                    loginBtn.disabled = false; // 恢复按钮
+                    loginBtn.disabled = false;
                 });
         });
     }
     if (registerBtn) {
         registerBtn.addEventListener('click', () => {
-            registerBtn.disabled = true; // 禁用按钮
+            registerBtn.disabled = true;
             authErrorMessage.textContent = '';
             auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
                 .catch(error => {
                     authErrorMessage.textContent = `注册失败: ${error.message}`;
                 })
                 .finally(() => {
-                    registerBtn.disabled = false; // 恢复按钮
+                    registerBtn.disabled = false;
                 });
         });
     }
 
-    // 退出登录按钮事件
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             auth.signOut();
         });
     }
 
-    // 导航切换按钮事件
     if (showStoresBtn) {
         showStoresBtn.addEventListener('click', () => showSection('stores'));
     }
@@ -110,14 +115,25 @@ document.addEventListener('DOMContentLoaded', () => {
         showKeywordsBtn.addEventListener('click', () => showSection('keywords'));
     }
 
-    // 搜索和筛选事件
-    if (storeSearchInput) storeSearchInput.addEventListener('input', filterAndSearchStores);
-    if (storeSiteFilter) storeSiteFilter.addEventListener('change', filterAndSearchStores);
-    if (keywordSearchInput) keywordSearchInput.addEventListener('input', filterAndSearchKeywords);
-    if (keywordSiteFilter) keywordSiteFilter.addEventListener('change', filterAndSearchKeywords);
+    if (storeSearchInput) storeSearchInput.addEventListener('input', () => {
+        currentPageStore = 1;
+        filterAndSearchStores();
+    });
+    if (storeSiteFilter) storeSiteFilter.addEventListener('change', () => {
+        currentPageStore = 1;
+        filterAndSearchStores();
+    });
+    if (keywordSearchInput) keywordSearchInput.addEventListener('input', () => {
+        currentPageKeyword = 1;
+        filterAndSearchKeywords();
+    });
+    if (keywordSiteFilter) keywordSiteFilter.addEventListener('change', () => {
+        currentPageKeyword = 1;
+        filterAndSearchKeywords();
+    });
 });
 
-// --- 功能函数 ---
+// --- 辅助函数 ---
 
 function showSection(section) {
     if (section === 'stores') {
@@ -125,18 +141,78 @@ function showSection(section) {
         keywordsSection.style.display = 'none';
         showStoresBtn.classList.add('active-tab-btn');
         showKeywordsBtn.classList.remove('active-tab-btn');
-        renderStoreData(allStoreData);
+        renderStoreData(filteredStoreData);
     } else {
         storesSection.style.display = 'none';
         keywordsSection.style.display = 'block';
         showStoresBtn.classList.remove('active-tab-btn');
         showKeywordsBtn.classList.add('active-tab-btn');
-        renderKeywordData(allKeywordData);
+        renderKeywordData(filteredKeywordData);
     }
 }
 
+function renderPagination(totalItems, currentPage, container, renderFunction) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    container.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+
+    const createButton = (text, page, isActive = false) => {
+        const button = document.createElement('button');
+        button.textContent = text;
+        button.classList.add('copilot-amz-btn', 'pagination-btn');
+        if (isActive) button.classList.add('active');
+        button.disabled = isActive;
+        button.addEventListener('click', () => {
+            currentPage = page;
+            if (renderFunction === renderStoreData) currentPageStore = page;
+            else currentPageKeyword = page;
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const dataToRender = (renderFunction === renderStoreData) ? filteredStoreData.slice(start, end) : filteredKeywordData.slice(start, end);
+            renderFunction(dataToRender);
+            renderPagination(totalItems, currentPage, container, renderFunction);
+        });
+        return button;
+    };
+
+    container.appendChild(createButton('上一页', currentPage > 1 ? currentPage - 1 : 1, currentPage === 1));
+
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (currentPage <= 3) endPage = Math.min(totalPages, 5);
+    if (currentPage > totalPages - 2) startPage = Math.max(1, totalPages - 4);
+    
+    if (startPage > 1) {
+        container.appendChild(createButton('1', 1));
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        container.appendChild(createButton(i, i, i === currentPage));
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        container.appendChild(createButton(totalPages, totalPages));
+    }
+
+    container.appendChild(createButton('下一页', currentPage < totalPages ? currentPage + 1 : totalPages, currentPage === totalPages));
+}
+
+// --- 数据获取与渲染 ---
+
 async function fetchStoreData() {
-    storeDataList.innerHTML = '<tr><td colspan="6">正在加载店铺数据...</td></tr>';
+    storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
         const snapshot = await db.collection('scraped_data').where('sellerId', '!=', null).get();
         const sites = new Set();
@@ -154,15 +230,15 @@ async function fetchStoreData() {
             option.textContent = site;
             storeSiteFilter.appendChild(option);
         });
-        renderStoreData(allStoreData);
+        filterAndSearchStores();
     } catch (error) {
-        storeDataList.innerHTML = `<tr><td colspan="6" class="error-message">获取店铺数据失败: ${error.message}</td></tr>`;
+        storeDataList.innerHTML = `<tr><td colspan="10" class="error-message">获取店铺数据失败: ${error.message}</td></tr>`;
         console.error("Error fetching store data:", error);
     }
 }
 
 async function fetchKeywordData() {
-    keywordDataList.innerHTML = '<tr><td colspan="5">正在加载关键词数据...</td></tr>';
+    keywordDataList.innerHTML = '<tr><td colspan="6">正在加载关键词数据...</td></tr>';
     try {
         const snapshot = await db.collection('scraped_data').where('keyword', '!=', null).get();
         const sites = new Set();
@@ -180,12 +256,88 @@ async function fetchKeywordData() {
             option.textContent = site;
             keywordSiteFilter.appendChild(option);
         });
-        renderKeywordData(allKeywordData);
+        filterAndSearchKeywords();
     } catch (error) {
-        keywordDataList.innerHTML = `<tr><td colspan="5" class="error-message">获取关键词数据失败: ${error.message}</td></tr>`;
+        keywordDataList.innerHTML = `<tr><td colspan="6" class="error-message">获取关键词数据失败: ${error.message}</td></tr>`;
         console.error("Error fetching keyword data:", error);
     }
 }
+
+function renderStoreData(data) {
+    if (data.length === 0) {
+        storeDataList.innerHTML = '<tr><td colspan="10">没有找到任何店铺数据。</td></tr>';
+        return;
+    }
+    const startIndex = (currentPageStore - 1) * itemsPerPage;
+    storeDataList.innerHTML = data.map((item, index) => `
+        <tr>
+            <td>${startIndex + index + 1}</td>
+            <td>${item.site || 'N/A'}</td>
+            <td><a href="${getStoreUrl(item.sellerId, item.site)}" target="_blank">${item.sellerName || 'N/A'}</a></td>
+            <td>${item.feedback || 'N/A'}</td>
+            <td>${item.rating || 'N/A'}</td>
+            <td>${item.reviews || 'N/A'}</td>
+            <td>${item.recommendCount || 'N/A'}</td>
+            <td>${item.newProductCount || 'N/A'}</td>
+            <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+            <td>
+                <button class="action-btn update-btn" onclick="updateData('${item.id}')">更新</button>
+                <button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button>
+            </td>
+        </tr>
+    `).join('');
+    storeTotalCount.textContent = filteredStoreData.length;
+    renderPagination(filteredStoreData.length, currentPageStore, storePagination, renderStoreData);
+}
+
+function renderKeywordData(data) {
+    if (data.length === 0) {
+        keywordDataList.innerHTML = '<tr><td colspan="6">没有找到任何关键词数据。</td></tr>';
+        return;
+    }
+    const startIndex = (currentPageKeyword - 1) * itemsPerPage;
+    keywordDataList.innerHTML = data.map((item, index) => `
+        <tr>
+            <td>${startIndex + index + 1}</td>
+            <td>${item.site || 'N/A'}</td>
+            <td><a href="${getKeywordUrl(item.keyword, item.site)}" target="_blank">${item.keyword || 'N/A'}</a></td>
+            <td>${item.count || 'N/A'}</td>
+            <td>${item.date || 'N/A'}</td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button></td>
+        </tr>
+    `).join('');
+    keywordTotalCount.textContent = filteredKeywordData.length;
+    renderPagination(filteredKeywordData.length, currentPageKeyword, keywordPagination, renderKeywordData);
+}
+
+function filterAndSearchStores() {
+    const searchText = storeSearchInput.value.toLowerCase();
+    const selectedSite = storeSiteFilter.value;
+    filteredStoreData = allStoreData.filter(item => {
+        const matchesSearch = (item.sellerName?.toLowerCase().includes(searchText) || 
+                               item.sellerId?.toLowerCase().includes(searchText));
+        const matchesSite = !selectedSite || item.site === selectedSite;
+        return matchesSearch && matchesSite;
+    });
+    const start = (currentPageStore - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    renderStoreData(filteredStoreData.slice(start, end));
+}
+
+function filterAndSearchKeywords() {
+    const searchText = keywordSearchInput.value.toLowerCase();
+    const selectedSite = keywordSiteFilter.value;
+    filteredKeywordData = allKeywordData.filter(item => {
+        const matchesSearch = item.keyword?.toLowerCase().includes(searchText);
+        const matchesSite = !selectedSite || item.site === selectedSite;
+        return matchesSearch && matchesSite;
+    });
+    const start = (currentPageKeyword - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    renderKeywordData(filteredKeywordData.slice(start, end));
+}
+
+// --- 操作函数 ---
 
 async function deleteData(docId) {
     if (confirm('确定要删除这条数据吗？')) {
@@ -202,58 +354,43 @@ async function deleteData(docId) {
 }
 window.deleteData = deleteData;
 
-function renderStoreData(data) {
-    if (data.length === 0) {
-        storeDataList.innerHTML = '<tr><td colspan="6">没有找到任何店铺数据。</td></tr>';
-        return;
-    }
-    storeDataList.innerHTML = data.map(item => `
-        <tr>
-            <td>${item.sellerName || 'N/A'}</td>
-            <td>${item.sellerId || 'N/A'}</td>
-            <td>${item.site || 'N/A'}</td>
-            <td>${item.feedback || 'N/A'}</td>
-            <td>${item.recommendCount || 'N/A'}</td>
-            <td><button class="delete-btn" onclick="deleteData('${item.id}')">&times;</button></td>
-        </tr>
-    `).join('');
+async function updateData(docId) {
+    alert(`更新功能尚未实现，文档ID: ${docId}`);
+    // 这里可以添加更新数据的逻辑
+    // 例如：await db.collection('scraped_data').doc(docId).update({ ... });
+}
+window.updateData = updateData;
+
+// --- URL生成函数 ---
+
+function getStoreUrl(sellerId, site) {
+    const domainMap = {
+        'amazon.com': 'www.amazon.com',
+        'amazon.co.uk': 'www.amazon.co.uk',
+        'amazon.de': 'www.amazon.de',
+        'amazon.fr': 'www.amazon.fr',
+        'amazon.es': 'www.amazon.es',
+        'amazon.it': 'www.amazon.it',
+        'amazon.ca': 'www.amazon.ca',
+        'amazon.jp': 'www.amazon.co.jp',
+        'amazon.au': 'www.amazon.com.au'
+    };
+    const domain = domainMap[site] || 'www.amazon.com';
+    return `https://${domain}/s?me=${sellerId}`;
 }
 
-function renderKeywordData(data) {
-    if (data.length === 0) {
-        keywordDataList.innerHTML = '<tr><td colspan="5">没有找到任何关键词数据。</td></tr>';
-        return;
-    }
-    keywordDataList.innerHTML = data.map(item => `
-        <tr>
-            <td>${item.keyword || 'N/A'}</td>
-            <td>${item.site || 'N/A'}</td>
-            <td>${item.count || 'N/A'}</td>
-            <td>${item.date || 'N/A'}</td>
-            <td><button class="delete-btn" onclick="deleteData('${item.id}')">&times;</button></td>
-        </tr>
-    `).join('');
-}
-
-function filterAndSearchStores() {
-    const searchText = storeSearchInput.value.toLowerCase();
-    const selectedSite = storeSiteFilter.value;
-    const filteredData = allStoreData.filter(item => {
-        const matchesSearch = (item.sellerName?.toLowerCase().includes(searchText) || 
-                               item.sellerId?.toLowerCase().includes(searchText));
-        const matchesSite = !selectedSite || item.site === selectedSite;
-        return matchesSearch && matchesSite;
-    });
-    renderStoreData(filteredData);
-}
-
-function filterAndSearchKeywords() {
-    const searchText = keywordSearchInput.value.toLowerCase();
-    const selectedSite = keywordSiteFilter.value;
-    const filteredData = allKeywordData.filter(item => {
-        const matchesSearch = item.keyword?.toLowerCase().includes(searchText);
-        const matchesSite = !selectedSite || item.site === selectedSite;
-        return matchesSearch && matchesSite;
-    });
-    renderKeywordData(filteredData);
+function getKeywordUrl(keyword, site) {
+    const domainMap = {
+        'amazon.com': 'www.amazon.com',
+        'amazon.co.uk': 'www.amazon.co.uk',
+        'amazon.de': 'www.amazon.de',
+        'amazon.fr': 'www.amazon.fr',
+        'amazon.es': 'www.amazon.es',
+        'amazon.it': 'www.amazon.it',
+        'amazon.ca': 'www.amazon.ca',
+        'amazon.jp': 'www.amazon.co.jp',
+        'amazon.au': 'www.amazon.com.au'
+    };
+    const domain = domainMap[site] || 'www.amazon.com';
+    return `https://${domain}/s?k=${encodeURIComponent(keyword)}`;
 }

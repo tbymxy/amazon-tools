@@ -285,8 +285,8 @@ function renderStoreData(data) {
             <td>${item.feedback || 'N/A'}</td>
             <td>${item.rating || 'N/A'}</td>
             <td>${item.reviews || 'N/A'}</td>
-            <td>${item.recommendCount || 'N/A'}</td>
-            <td>${item.newProductCount || 'N/A'}</td>
+            <td>${item.featuredPageUrl ? `<a href="${item.featuredPageUrl}" target="_blank">${item.recommendCount || 'N/A'}</a>` : item.recommendCount || 'N/A'}</td>
+            <td>${item.newestArrivalsUrl ? `<a href="${item.newestArrivalsUrl}" target="_blank">${item.newProductCount || 'N/A'}</a>` : item.newProductCount || 'N/A'}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
             <td>
                 <button class="action-btn update-btn" onclick="updateData('${item.id}')">更新</button>
@@ -382,7 +382,6 @@ function getStoreUrl(sellerId, site) {
         'amazon.au': 'www.amazon.com.au'
     };
     const domain = domainMap[site] || 'www.amazon.com';
-    // ⭐ 修复后的正确 URL 格式
     return `https://${domain}/sp?seller=${sellerId}`;
 }
 

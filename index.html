@@ -30,12 +30,13 @@
 
         <div id="dashboard-container" class="dashboard-container" style="display: none;">
             
+            <div class="nav-container">
+                <button id="show-stores-btn" class="copilot-amz-btn active-tab-btn">店铺数据</button>
+                <button id="show-keywords-btn" class="copilot-amz-btn">关键词数据</button>
+            </div>
+
             <div id="stores-section" class="data-section">
                 <div class="top-controls">
-                    <div class="navigation-buttons">
-                        <button id="show-stores-btn" class="copilot-amz-btn active-tab-btn">店铺数据</button>
-                        <button id="show-keywords-btn" class="copilot-amz-btn">关键词数据</button>
-                    </div>
                     <div class="filter-controls">
                         <input type="text" id="store-search-input" placeholder="搜索店铺名或SellerID..." class="search-input">
                         <select id="store-site-filter" class="select-filter"></select>
@@ -70,10 +71,6 @@
 
             <div id="keywords-section" class="data-section" style="display: none;">
                 <div class="top-controls">
-                    <div class="navigation-buttons">
-                        <button id="show-stores-btn" class="copilot-amz-btn active-tab-btn">店铺数据</button>
-                        <button id="show-keywords-btn" class="copilot-amz-btn">关键词数据</button>
-                    </div>
                     <div class="filter-controls">
                         <input type="text" id="keyword-search-input" placeholder="搜索关键词..." class="search-input">
                         <select id="keyword-site-filter" class="select-filter"></select>

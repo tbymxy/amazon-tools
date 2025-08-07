@@ -52,7 +52,7 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) userEmailSpan.textContent = user.email;
         if (logoutBtn) logoutBtn.style.display = 'inline-block';
         
-        // 登录后直接加载数据，但只在页面加载时执行一次
+        // 登录后直接加载数据
         if (allStoreData.length === 0 && allKeywordData.length === 0) {
             fetchStoreData();
             fetchKeywordData();
@@ -207,7 +207,7 @@ function renderStoreData(data) {
         storeDataList.innerHTML = '<tr><td colspan="6">没有找到任何店铺数据。</td></tr>';
         return;
     }
-    // 渲染店铺数据，确保有6个<td>
+    // 修正后的渲染函数：生成表格行和单元格
     storeDataList.innerHTML = data.map(item => `
         <tr>
             <td>${item.sellerName || 'N/A'}</td>
@@ -225,7 +225,7 @@ function renderKeywordData(data) {
         keywordDataList.innerHTML = '<tr><td colspan="5">没有找到任何关键词数据。</td></tr>';
         return;
     }
-    // 渲染关键词数据，确保有5个<td>
+    // 修正后的渲染函数：生成表格行和单元格
     keywordDataList.innerHTML = data.map(item => `
         <tr>
             <td>${item.keyword || 'N/A'}</td>

@@ -218,11 +218,27 @@ async function fetchStoreData() {
     try {
         const snapshot = await db.collection('amazonStores').get();
         const sites = new Set();
+        // ⭐ 关键修改：正确访问嵌套的 amazonStores 子对象
         allStoreData = snapshot.docs.map(doc => {
             const data = doc.data();
-            data.id = doc.id;
-            sites.add(data.site);
-            return data;
+            const amazonStoreData = data.amazonStores || {}; // 获取子对象，如果不存在则使用空对象
+            const mappedData = {
+                id: doc.id,
+                site: data.site || 'N/A',
+                sellerName: data.sellerName || 'N/A',
+                sellerId: data.sellerId || 'N/A',
+                feedback: data.feedback || 'N/A',
+                rating: data.rating || 'N/A',
+                reviews: data.reviews || 'N/A',
+                createdAt: data.createdAt,
+                // ⭐ 将嵌套字段提升到顶级
+                featuredPageUrl: amazonStoreData.featuredPageUrl || '',
+                newestArrivalsUrl: amazonStoreData.newestArrivalsUrl || '',
+                recommendCount: amazonStoreData.recommendCount || 'N/A',
+                newProductCount: amazonStoreData.newProductCount || 'N/A'
+            };
+            sites.add(mappedData.site);
+            return mappedData;
         });
 
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -280,9 +296,9 @@ function renderStoreData(data) {
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
-        // ⭐ 修复后的关键逻辑：使用逻辑或 (||) 运算符，如果字段不存在，则默认使用 N/A
-        const recommendCount = item.recommendCount || 'N/A';
-        const newProductCount = item.newProductCount || 'N/A';
+        // ⭐ 关键修复：确保 URL 存在且不为空，同时检查计数是否为有效数字
+        const recommendCount = (typeof item.recommendCount === 'number') ? item.recommendCount : 'N/A';
+        const newProductCount = (typeof item.newProductCount === 'number') ? item.newProductCount : 'N/A';
 
         const featuredProductsLink = (item.featuredPageUrl && item.featuredPageUrl !== 'N/A')
             ? `<a href="${item.featuredPageUrl}" target="_blank">${recommendCount}</a>`

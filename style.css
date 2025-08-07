@@ -110,44 +110,46 @@ body {
     padding: 20px 40px;
 }
 
-/* ⭐ 新增的布局样式 */
-.top-controls {
+/* ⭐ 新增导航容器样式 */
+.nav-container {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px; /* 元素间的间距 */
-}
-
-.navigation-buttons {
-    display: flex;
+    justify-content: flex-start; /* 靠左对齐 */
     gap: 15px;
+    margin-bottom: 20px;
 }
 
-.navigation-buttons .copilot-amz-btn {
-    min-width: 120px;
+.nav-container .copilot-amz-btn {
+    min-width: 150px;
 }
 
-.navigation-buttons .copilot-amz-btn.active-tab-btn {
+.nav-container .copilot-amz-btn.active-tab-btn {
     background: var(--secondary-color);
     color: var(--card-bg);
     border: 1px solid var(--secondary-color);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.navigation-buttons .copilot-amz-btn.active-tab-btn:hover {
+.nav-container .copilot-amz-btn.active-tab-btn:hover {
     background: #005a69;
     transform: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.top-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .filter-controls {
     display: flex;
     align-items: center;
     gap: 15px;
-    flex-grow: 1; /* 占据剩余空间 */
-    justify-content: flex-end; /* 靠右对齐 */
+    flex-grow: 1;
+    justify-content: flex-end;
 }
 
 .search-input {
@@ -167,15 +169,9 @@ body {
 }
 
 .summary {
-    margin: 0; /* 移除外边距 */
+    margin: 0;
     font-size: 14px;
     color: var(--text-secondary);
-}
-
-/* ⭐ 调整旧的 controls 样式 */
-.controls {
-    /* 删除旧的 flex 布局，新布局由 top-controls 和 filter-controls 控制 */
-    display: none;
 }
 
 .data-section {
@@ -292,6 +288,7 @@ body {
 @media (max-width: 900px) {
     .top-controls {
         flex-direction: column;
+        align-items: stretch;
     }
     .filter-controls {
         width: 100%;
@@ -313,7 +310,7 @@ body {
     .dashboard-container {
         padding: 20px;
     }
-    .navigation-buttons, .filter-controls {
+    .nav-container, .filter-controls {
         flex-direction: column;
         align-items: stretch;
     }

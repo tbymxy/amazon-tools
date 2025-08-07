@@ -4,7 +4,8 @@ import {
   getFirestore, collection, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
-  getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut
+  getAuth, GoogleAuthProvider, signInWithRedirect,
+  getRedirectResult, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -19,23 +20,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
 const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
 const container = document.getElementById("data-container");
 
 loginBtn.onclick = async () => {
-  const provider = new GoogleAuthProvider();
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    alert("登录失败：" + err.message);
-  }
+  await signInWithRedirect(auth, provider);
 };
 
 logoutBtn.onclick = async () => {
   await signOut(auth);
+  window.location.reload();
 };
+
+getRedirectResult(auth).catch(error => {
+  alert("登录失败：" + error.message);
+});
 
 onAuthStateChanged(auth, user => {
   if (user) {

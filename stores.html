@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店铺数据管理 - Amazon 采集</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <a href="index.html" class="back-link">&lt; 返回主页</a>
+        <h1>店铺数据管理</h1>
+        <div id="auth-status" class="auth-status">
+            <span id="user-email"></span>
+            <button id="logout-btn" class="copilot-amz-btn" style="display: none;">退出登录</button>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <div class="controls">
+            <input type="text" id="store-search-input" placeholder="搜索店铺名或SellerID..." class="search-input">
+            <select id="store-site-filter" class="select-filter">
+                <option value="">所有站点</option>
+            </select>
+        </div>
+
+        <div id="store-data-list" class="data-list">
+            <p>正在加载店铺数据...</p>
+        </div>
+    </main>
+    
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+    <script src="auth.js"></script>
+    <script src="stores.js"></script>
+
+</body>
+</html>

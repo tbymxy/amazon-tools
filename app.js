@@ -223,7 +223,6 @@ async function fetchStoreData() {
             return data;
         });
 
-        // ⭐ 默认排序：根据 rating 由大到小排序
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -252,7 +251,6 @@ async function fetchKeywordData() {
             return data;
         });
 
-        // ⭐ 默认排序：根据 date 由新到旧排序
         allKeywordData.sort((a, b) => {
             const dateA = new Date(a.date || '1970-01-01');
             const dateB = new Date(b.date || '1970-01-01');
@@ -384,6 +382,7 @@ function getStoreUrl(sellerId, site) {
         'amazon.au': 'www.amazon.com.au'
     };
     const domain = domainMap[site] || 'www.amazon.com';
+    // ⭐ 修复后的正确 URL 格式
     return `https://${domain}/s?me=${sellerId}`;
 }
 

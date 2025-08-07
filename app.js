@@ -141,13 +141,15 @@ function showSection(section) {
         keywordsSection.style.display = 'none';
         showStoresBtn.classList.add('active-tab-btn');
         showKeywordsBtn.classList.remove('active-tab-btn');
-        renderStoreData(filteredStoreData);
+        // 渲染当前页面的数据
+        renderStoreData(filteredStoreData.slice((currentPageStore - 1) * itemsPerPage, currentPageStore * itemsPerPage));
     } else {
         storesSection.style.display = 'none';
         keywordsSection.style.display = 'block';
         showStoresBtn.classList.remove('active-tab-btn');
         showKeywordsBtn.classList.add('active-tab-btn');
-        renderKeywordData(filteredKeywordData);
+        // 渲染当前页面的数据
+        renderKeywordData(filteredKeywordData.slice((currentPageKeyword - 1) * itemsPerPage, currentPageKeyword * itemsPerPage));
     }
 }
 

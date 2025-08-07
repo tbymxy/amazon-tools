@@ -282,12 +282,18 @@ function renderStoreData(data) {
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
-        // ⭐ 关键修复：直接访问嵌套的 amazonStores 子对象
+        // ⭐ 关键修复：更健壮地处理嵌套数据
         const nestedStoreData = item.amazonStores || {};
         
-        const recommendCount = (typeof nestedStoreData.recommendCount === 'number') ? nestedStoreData.recommendCount : 'N/A';
-        const newProductCount = (typeof nestedStoreData.newProductCount === 'number') ? nestedStoreData.newProductCount : 'N/A';
+        // 尝试将值转换为数字，如果失败则回退到 'N/A'
+        const recommendCount = nestedStoreData.recommendCount 
+            ? (!isNaN(parseInt(nestedStoreData.recommendCount)) ? parseInt(nestedStoreData.recommendCount) : 'N/A') 
+            : 'N/A';
+        const newProductCount = nestedStoreData.newProductCount 
+            ? (!isNaN(parseInt(nestedStoreData.newProductCount)) ? parseInt(nestedStoreData.newProductCount) : 'N/A') 
+            : 'N/A';
         
+        // 确保 URL 存在且不为空
         const featuredProductsLink = (nestedStoreData.featuredPageUrl && nestedStoreData.featuredPageUrl !== 'N/A')
             ? `<a href="${nestedStoreData.featuredPageUrl}" target="_blank">${recommendCount}</a>`
             : recommendCount;
@@ -312,26 +318,6 @@ function renderStoreData(data) {
     `}).join('');
     storeTotalCount.textContent = filteredStoreData.length;
     renderPagination(filteredStoreData.length, currentPageStore, storePagination, renderStoreData);
-}
-
-function renderKeywordData(data) {
-    if (data.length === 0) {
-        keywordDataList.innerHTML = '<tr><td colspan="6">没有找到任何关键词数据。</td></tr>';
-        return;
-    }
-    const startIndex = (currentPageKeyword - 1) * itemsPerPage;
-    keywordDataList.innerHTML = data.map((item, index) => `
-        <tr>
-            <td>${startIndex + index + 1}</td>
-            <td>${item.site || 'N/A'}</td>
-            <td><a href="${getKeywordUrl(item.keyword, item.site)}" target="_blank">${item.keyword || 'N/A'}</a></td>
-            <td>${item.count || 'N/A'}</td>
-            <td>${item.date || 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'scraped_data')">删除</button></td>
-        </tr>
-    `).join('');
-    keywordTotalCount.textContent = filteredKeywordData.length;
-    renderPagination(filteredKeywordData.length, currentPageKeyword, keywordPagination, renderKeywordData);
 }
 
 function filterAndSearchStores() {

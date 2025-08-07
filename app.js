@@ -216,17 +216,15 @@ function renderPagination(totalItems, currentPage, container, renderFunction) {
 async function fetchStoreData() {
     storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
-        // ⭐ 关键修改：从 amazonStores 集合中获取数据
         const snapshot = await db.collection('amazonStores').get();
         const sites = new Set();
         allStoreData = snapshot.docs.map(doc => {
             const data = doc.data();
-            data.id = doc.id; // 保存文档ID
+            data.id = doc.id;
             sites.add(data.site);
             return data;
         });
 
-        // ⭐ 默认排序：根据 rating 由大到小排序
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -255,7 +253,6 @@ async function fetchKeywordData() {
             return data;
         });
 
-        // ⭐ 默认排序：根据 date 由新到旧排序
         allKeywordData.sort((a, b) => {
             const dateA = new Date(a.date || '1970-01-01');
             const dateB = new Date(b.date || '1970-01-01');
@@ -283,14 +280,17 @@ function renderStoreData(data) {
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
-        // ⭐ 新增: 根据 URL 存在性渲染链接
-        const featuredProductsLink = item.featuredPageUrl
-            ? `<a href="${item.featuredPageUrl}" target="_blank">${item.recommendCount || 'N/A'}</a>`
-            : (item.recommendCount || 'N/A');
+        // ⭐ 关键修复：确保 URL 存在且不为空，同时检查计数是否为有效数字
+        const recommendCount = (typeof item.recommendCount === 'number') ? item.recommendCount : 'N/A';
+        const newProductCount = (typeof item.newProductCount === 'number') ? item.newProductCount : 'N/A';
 
-        const newArrivalsLink = item.newestArrivalsUrl
-            ? `<a href="${item.newestArrivalsUrl}" target="_blank">${item.newProductCount || 'N/A'}</a>`
-            : (item.newProductCount || 'N/A');
+        const featuredProductsLink = (item.featuredPageUrl && item.featuredPageUrl !== 'N/A')
+            ? `<a href="${item.featuredPageUrl}" target="_blank">${recommendCount}</a>`
+            : recommendCount;
+
+        const newArrivalsLink = (item.newestArrivalsUrl && item.newestArrivalsUrl !== 'N/A')
+            ? `<a href="${item.newestArrivalsUrl}" target="_blank">${newProductCount}</a>`
+            : newProductCount;
 
         return `
         <tr>

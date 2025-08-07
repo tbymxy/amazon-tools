@@ -29,10 +29,29 @@
         </div>
 
         <div id="dashboard-container" class="dashboard-container" style="display: none;">
-            <p>欢迎回来！请选择你要管理的数据类型。</p>
             <div class="navigation-buttons">
-                <a href="stores.html" class="copilot-amz-btn">店铺数据管理</a>
-                <a href="keywords.html" class="copilot-amz-btn">关键词数据管理</a>
+                <button id="show-stores-btn" class="copilot-amz-btn active-tab-btn">店铺数据</button>
+                <button id="show-keywords-btn" class="copilot-amz-btn">关键词数据</button>
+            </div>
+            
+            <div id="stores-section" class="data-section">
+                <div class="controls">
+                    <input type="text" id="store-search-input" placeholder="搜索店铺名或SellerID..." class="search-input">
+                    <select id="store-site-filter" class="select-filter"></select>
+                </div>
+                <div id="store-data-list" class="data-list">
+                    <p>正在加载店铺数据...</p>
+                </div>
+            </div>
+
+            <div id="keywords-section" class="data-section" style="display: none;">
+                <div class="controls">
+                    <input type="text" id="keyword-search-input" placeholder="搜索关键词..." class="search-input">
+                    <select id="keyword-site-filter" class="select-filter"></select>
+                </div>
+                <div id="keyword-data-list" class="data-list">
+                    <p>正在加载关键词数据...</p>
+                </div>
             </div>
         </div>
     </main>
@@ -40,7 +59,7 @@
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-    <script src="auth.js"></script>
+    <script src="app.js"></script>
 
 </body>
 </html>

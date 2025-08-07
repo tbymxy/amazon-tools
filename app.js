@@ -383,7 +383,7 @@ function getStoreUrl(sellerId, site) {
     };
     const domain = domainMap[site] || 'www.amazon.com';
     // ⭐ 修复后的正确 URL 格式
-    return `https://${domain}/s?me=${sellerId}`;
+    return `https://${domain}/sp?seller=${sellerId}`;
 }
 
 function getKeywordUrl(keyword, site) {

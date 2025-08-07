@@ -61,8 +61,10 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) userEmailSpan.textContent = user.email;
         if (logoutBtn) logoutBtn.style.display = 'inline-block';
         
-        if (allStoreData.length === 0 && allKeywordData.length === 0) {
+        if (allStoreData.length === 0) {
             fetchStoreData();
+        }
+        if (allKeywordData.length === 0) {
             fetchKeywordData();
         }
     } else {
@@ -214,15 +216,17 @@ function renderPagination(totalItems, currentPage, container, renderFunction) {
 async function fetchStoreData() {
     storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
-        const snapshot = await db.collection('scraped_data').where('sellerId', '!=', null).get();
+        // ⭐ 关键修改：从 amazonStores 集合中获取数据
+        const snapshot = await db.collection('amazonStores').get();
         const sites = new Set();
         allStoreData = snapshot.docs.map(doc => {
             const data = doc.data();
-            data.id = doc.id;
+            data.id = doc.id; // 保存文档ID
             sites.add(data.site);
             return data;
         });
 
+        // ⭐ 默认排序：根据 rating 由大到小排序
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -251,6 +255,7 @@ async function fetchKeywordData() {
             return data;
         });
 
+        // ⭐ 默认排序：根据 date 由新到旧排序
         allKeywordData.sort((a, b) => {
             const dateA = new Date(a.date || '1970-01-01');
             const dateB = new Date(b.date || '1970-01-01');
@@ -298,7 +303,7 @@ function renderStoreData(data) {
             <td>${featuredProductsLink}</td>
             <td>${newArrivalsLink}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button></td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'amazonStores')">删除</button></td>
         </tr>
     `}).join('');
     storeTotalCount.textContent = filteredStoreData.length;
@@ -318,7 +323,7 @@ function renderKeywordData(data) {
             <td><a href="${getKeywordUrl(item.keyword, item.site)}" target="_blank">${item.keyword || 'N/A'}</a></td>
             <td>${item.count || 'N/A'}</td>
             <td>${item.date || 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button></td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'scraped_data')">删除</button></td>
         </tr>
     `).join('');
     keywordTotalCount.textContent = filteredKeywordData.length;
@@ -354,13 +359,17 @@ function filterAndSearchKeywords() {
 
 // --- 操作函数 ---
 
-async function deleteData(docId) {
+async function deleteData(docId, collectionName) {
     if (confirm('确定要删除这条数据吗？')) {
         try {
-            await db.collection('scraped_data').doc(docId).delete();
-            allStoreData = allStoreData.filter(item => item.id !== docId);
-            allKeywordData = allKeywordData.filter(item => item.id !== docId);
-            showSection(storesSection.style.display !== 'none' ? 'stores' : 'keywords');
+            await db.collection(collectionName).doc(docId).delete();
+            if (collectionName === 'amazonStores') {
+                allStoreData = allStoreData.filter(item => item.id !== docId);
+                showSection('stores');
+            } else {
+                allKeywordData = allKeywordData.filter(item => item.id !== docId);
+                showSection('keywords');
+            }
             alert('数据删除成功！');
         } catch (error) {
             alert(`删除失败: ${error.message}`);

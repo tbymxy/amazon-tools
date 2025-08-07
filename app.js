@@ -277,7 +277,17 @@ function renderStoreData(data) {
         return;
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
-    storeDataList.innerHTML = data.map((item, index) => `
+    storeDataList.innerHTML = data.map((item, index) => {
+        // ⭐ 新增: 根据 URL 存在性渲染链接
+        const featuredProductsLink = item.featuredPageUrl
+            ? `<a href="${item.featuredPageUrl}" target="_blank">${item.recommendCount || 'N/A'}</a>`
+            : (item.recommendCount || 'N/A');
+
+        const newArrivalsLink = item.newestArrivalsUrl
+            ? `<a href="${item.newestArrivalsUrl}" target="_blank">${item.newProductCount || 'N/A'}</a>`
+            : (item.newProductCount || 'N/A');
+
+        return `
         <tr>
             <td>${startIndex + index + 1}</td>
             <td>${item.site || 'N/A'}</td>
@@ -285,15 +295,12 @@ function renderStoreData(data) {
             <td>${item.feedback || 'N/A'}</td>
             <td>${item.rating || 'N/A'}</td>
             <td>${item.reviews || 'N/A'}</td>
-            <td>${item.featuredPageUrl ? `<a href="${item.featuredPageUrl}" target="_blank">${item.recommendCount || 'N/A'}</a>` : item.recommendCount || 'N/A'}</td>
-            <td>${item.newestArrivalsUrl ? `<a href="${item.newestArrivalsUrl}" target="_blank">${item.newProductCount || 'N/A'}</a>` : item.newProductCount || 'N/A'}</td>
+            <td>${featuredProductsLink}</td>
+            <td>${newArrivalsLink}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-            <td>
-                <button class="action-btn update-btn" onclick="updateData('${item.id}')">更新</button>
-                <button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button>
-            </td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button></td>
         </tr>
-    `).join('');
+    `}).join('');
     storeTotalCount.textContent = filteredStoreData.length;
     renderPagination(filteredStoreData.length, currentPageStore, storePagination, renderStoreData);
 }
@@ -361,11 +368,6 @@ async function deleteData(docId) {
     }
 }
 window.deleteData = deleteData;
-
-async function updateData(docId) {
-    alert(`更新功能尚未实现，文档ID: ${docId}`);
-}
-window.updateData = updateData;
 
 // --- URL生成函数 ---
 

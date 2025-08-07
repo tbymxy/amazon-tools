@@ -1,4 +1,4 @@
-// Firebase Configuration
+// Firebase 配置
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDqPJFaBp0x4ZBxXA46cAQ83iKx2NP6_Q4",
     authDomain: "seller-data-hgy.firebaseapp.com",
@@ -8,31 +8,31 @@ const FIREBASE_CONFIG = {
     appId: "1:663736276108:web:f7dc897d49b342fbc217a9"
 };
 
-// Initialize Firebase and define global variables
+// 初始化 Firebase 并定义全局变量
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// UI Elements
+// UI 元素
 const loginContainer = document.getElementById('login-container');
 const dashboardContainer = document.getElementById('dashboard-container');
 const authErrorMessage = document.getElementById('auth-error-message');
 const userEmailSpan = document.getElementById('user-email');
 const logoutBtn = document.getElementById('logout-btn');
 
-// Login/Registration Buttons
+// 登录/注册按钮
 const loginBtn = document.getElementById('login-btn');
 const registerBtn = document.getElementById('register-btn');
 const emailInput = document.getElementById('email-input');
 const passwordInput = document.getElementById('password-input');
 
-// Navigation and Data Areas
+// 导航和数据区域
 const showStoresBtn = document.getElementById('show-stores-btn');
 const showKeywordsBtn = document.getElementById('show-keywords-btn');
 const storesSection = document.getElementById('stores-section');
 const keywordsSection = document.getElementById('keywords-section');
 
-// Store Data Elements
+// 店铺数据元素
 const storeDataList = document.getElementById('store-data-list');
 const storeSearchInput = document.getElementById('store-search-input');
 const storeSiteFilter = document.getElementById('store-site-filter');
@@ -43,7 +43,7 @@ let filteredStoreData = [];
 let currentPageStore = 1;
 const itemsPerPage = 20;
 
-// Keyword Data Elements
+// 关键词数据元素
 const keywordDataList = document.getElementById('keyword-data-list');
 const keywordSearchInput = document.getElementById('keyword-search-input');
 const keywordSiteFilter = document.getElementById('keyword-site-filter');
@@ -53,7 +53,7 @@ let allKeywordData = [];
 let filteredKeywordData = [];
 let currentPageKeyword = 1;
 
-// --- Authentication State Listener ---
+// --- 认证状态监听器 ---
 auth.onAuthStateChanged(user => {
     if (user) {
         if (loginContainer) loginContainer.style.display = 'none';
@@ -75,7 +75,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- Event Listeners ---
+// --- 事件监听器 ---
 document.addEventListener('DOMContentLoaded', () => {
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authErrorMessage.textContent = '';
             auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
                 .catch(error => {
-                    authErrorMessage.textContent = `Login failed: ${error.message}`;
+                    authErrorMessage.textContent = `登录失败: ${error.message}`;
                 })
                 .finally(() => {
                     loginBtn.disabled = false;
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authErrorMessage.textContent = '';
             auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
                 .catch(error => {
-                    authErrorMessage.textContent = `Registration failed: ${error.message}`;
+                    authErrorMessage.textContent = `注册失败: ${error.message}`;
                 })
                 .finally(() => {
                     registerBtn.disabled = false;
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- Helper Functions ---
+// --- 辅助函数 ---
 
 function showSection(section) {
     if (section === 'stores') {
@@ -178,7 +178,7 @@ function renderPagination(totalItems, currentPage, container, renderFunction) {
         return button;
     };
 
-    container.appendChild(createButton('Previous', currentPage > 1 ? currentPage - 1 : 1, currentPage === 1));
+    container.appendChild(createButton('上一页', currentPage > 1 ? currentPage - 1 : 1, currentPage === 1));
 
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, currentPage + 2);
@@ -208,13 +208,13 @@ function renderPagination(totalItems, currentPage, container, renderFunction) {
         container.appendChild(createButton(totalPages, totalPages));
     }
 
-    container.appendChild(createButton('Next', currentPage < totalPages ? currentPage + 1 : totalPages, currentPage === totalPages));
+    container.appendChild(createButton('下一页', currentPage < totalPages ? currentPage + 1 : totalPages, currentPage === totalPages));
 }
 
-// --- Data Fetching and Rendering ---
+// --- 数据获取与渲染 ---
 
 async function fetchStoreData() {
-    storeDataList.innerHTML = '<tr><td colspan="10">Loading store data...</td></tr>';
+    storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
         const snapshot = await db.collection('amazonStores').get();
         const sites = new Set();
@@ -229,7 +229,7 @@ async function fetchStoreData() {
         
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
-        storeSiteFilter.innerHTML = '<option value="">All Sites</option>';
+        storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
         sites.forEach(site => {
             const option = document.createElement('option');
             option.value = site;
@@ -238,13 +238,13 @@ async function fetchStoreData() {
         });
         filterAndSearchStores();
     } catch (error) {
-        storeDataList.innerHTML = `<tr><td colspan="10" class="error-message">Failed to fetch store data: ${error.message}</td></tr>`;
+        storeDataList.innerHTML = `<tr><td colspan="10" class="error-message">获取店铺数据失败: ${error.message}</td></tr>`;
         console.error("Error fetching store data:", error);
     }
 }
 
 async function fetchKeywordData() {
-    keywordDataList.innerHTML = '<tr><td colspan="6">Loading keyword data...</td></tr>';
+    keywordDataList.innerHTML = '<tr><td colspan="6">正在加载关键词数据...</td></tr>';
     try {
         const snapshot = await db.collection('scraped_data').where('keyword', '!=', null).get();
         const sites = new Set();
@@ -261,7 +261,7 @@ async function fetchKeywordData() {
             return dateB - dateA;
         });
 
-        keywordSiteFilter.innerHTML = '<option value="">All Sites</option>';
+        keywordSiteFilter.innerHTML = '<option value="">所有站点</option>';
         sites.forEach(site => {
             const option = document.createElement('option');
             option.value = site;
@@ -270,20 +270,22 @@ async function fetchKeywordData() {
         });
         filterAndSearchKeywords();
     } catch (error) {
-        keywordDataList.innerHTML = `<tr><td colspan="6" class="error-message">Failed to fetch keyword data: ${error.message}</td></tr>`;
+        keywordDataList.innerHTML = `<tr><td colspan="6" class="error-message">获取关键词数据失败: ${error.message}</td></tr>`;
         console.error("Error fetching keyword data:", error);
     }
 }
 
 function renderStoreData(data) {
     if (data.length === 0) {
-        storeDataList.innerHTML = '<tr><td colspan="10">No store data found.</td></tr>';
+        storeDataList.innerHTML = '<tr><td colspan="10">没有找到任何店铺数据。</td></tr>';
         return;
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
+        // ⭐ 关键修复：更健壮地处理嵌套数据
         const nestedStoreData = item.amazonStores || {};
         
+        // 尝试将值转换为数字，如果失败则回退到 'N/A'
         const recommendCount = (nestedStoreData.recommendCount != null && nestedStoreData.recommendCount !== 'N/A' && !isNaN(parseInt(nestedStoreData.recommendCount)))
             ? parseInt(nestedStoreData.recommendCount)
             : 'N/A';
@@ -291,6 +293,7 @@ function renderStoreData(data) {
             ? parseInt(nestedStoreData.newProductCount)
             : 'N/A';
         
+        // 确保 URL 存在且不为空
         const featuredProductsLink = (nestedStoreData.featuredPageUrl && nestedStoreData.featuredPageUrl !== 'N/A')
             ? `<a href="${nestedStoreData.featuredPageUrl}" target="_blank">${recommendCount}</a>`
             : recommendCount;
@@ -310,31 +313,11 @@ function renderStoreData(data) {
             <td>${featuredProductsLink}</td>
             <td>${newArrivalsLink}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'amazonStores')">Delete</button></td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'amazonStores')">删除</button></td>
         </tr>
     `}).join('');
     storeTotalCount.textContent = filteredStoreData.length;
     renderPagination(filteredStoreData.length, currentPageStore, storePagination, renderStoreData);
-}
-
-function renderKeywordData(data) {
-    if (data.length === 0) {
-        keywordDataList.innerHTML = '<tr><td colspan="6">No keyword data found.</td></tr>';
-        return;
-    }
-    const startIndex = (currentPageKeyword - 1) * itemsPerPage;
-    keywordDataList.innerHTML = data.map((item, index) => `
-        <tr>
-            <td>${startIndex + index + 1}</td>
-            <td>${item.site || 'N/A'}</td>
-            <td><a href="${getKeywordUrl(item.keyword, item.site)}" target="_blank">${item.keyword || 'N/A'}</a></td>
-            <td>${item.count || 'N/A'}</td>
-            <td>${item.date || 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'scraped_data')">Delete</button></td>
-        </tr>
-    `).join('');
-    keywordTotalCount.textContent = filteredKeywordData.length;
-    renderPagination(filteredKeywordData.length, currentPageKeyword, keywordPagination, renderKeywordData);
 }
 
 function filterAndSearchStores() {
@@ -364,10 +347,10 @@ function filterAndSearchKeywords() {
     renderKeywordData(filteredKeywordData.slice(start, end));
 }
 
-// --- Action Functions ---
+// --- 操作函数 ---
 
 async function deleteData(docId, collectionName) {
-    if (confirm('Are you sure you want to delete this data?')) {
+    if (confirm('确定要删除这条数据吗？')) {
         try {
             await db.collection(collectionName).doc(docId).delete();
             if (collectionName === 'amazonStores') {
@@ -377,15 +360,15 @@ async function deleteData(docId, collectionName) {
                 allKeywordData = allKeywordData.filter(item => item.id !== docId);
                 showSection('keywords');
             }
-            alert('Data deleted successfully!');
+            alert('数据删除成功！');
         } catch (error) {
-            alert(`Deletion failed: ${error.message}`);
+            alert(`删除失败: ${error.message}`);
         }
     }
 }
 window.deleteData = deleteData;
 
-// --- URL Generation Functions ---
+// --- URL生成函数 ---
 
 function getStoreUrl(sellerId, site) {
     const domainMap = {

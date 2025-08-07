@@ -286,11 +286,11 @@ function renderStoreData(data) {
         const nestedStoreData = item.amazonStores || {};
         
         // 尝试将值转换为数字，如果失败则回退到 'N/A'
-        const recommendCount = nestedStoreData.recommendCount 
-            ? (!isNaN(parseInt(nestedStoreData.recommendCount)) ? parseInt(nestedStoreData.recommendCount) : 'N/A') 
+        const recommendCount = (nestedStoreData.recommendCount != null && nestedStoreData.recommendCount !== 'N/A' && !isNaN(parseInt(nestedStoreData.recommendCount)))
+            ? parseInt(nestedStoreData.recommendCount)
             : 'N/A';
-        const newProductCount = nestedStoreData.newProductCount 
-            ? (!isNaN(parseInt(nestedStoreData.newProductCount)) ? parseInt(nestedStoreData.newProductCount) : 'N/A') 
+        const newProductCount = (nestedStoreData.newProductCount != null && nestedStoreData.newProductCount !== 'N/A' && !isNaN(parseInt(nestedStoreData.newProductCount)))
+            ? parseInt(nestedStoreData.newProductCount)
             : 'N/A';
         
         // 确保 URL 存在且不为空

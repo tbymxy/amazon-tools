@@ -61,10 +61,8 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) userEmailSpan.textContent = user.email;
         if (logoutBtn) logoutBtn.style.display = 'inline-block';
         
-        if (allStoreData.length === 0) {
+        if (allStoreData.length === 0 && allKeywordData.length === 0) {
             fetchStoreData();
-        }
-        if (allKeywordData.length === 0) {
             fetchKeywordData();
         }
     } else {
@@ -216,17 +214,15 @@ function renderPagination(totalItems, currentPage, container, renderFunction) {
 async function fetchStoreData() {
     storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
-        const snapshot = await db.collection('amazonStores').get();
+        const snapshot = await db.collection('scraped_data').where('sellerId', '!=', null).get();
         const sites = new Set();
         allStoreData = snapshot.docs.map(doc => {
             const data = doc.data();
+            data.id = doc.id;
             sites.add(data.site);
-            return {
-                id: doc.id,
-                ...data
-            };
+            return data;
         });
-        
+
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -281,28 +277,7 @@ function renderStoreData(data) {
         return;
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
-    storeDataList.innerHTML = data.map((item, index) => {
-        // ⭐ 关键修复：更健壮地处理嵌套数据
-        const nestedStoreData = item.amazonStores || {};
-        
-        // 尝试将值转换为数字，如果失败则回退到 'N/A'
-        const recommendCount = (nestedStoreData.recommendCount != null && nestedStoreData.recommendCount !== 'N/A' && !isNaN(parseInt(nestedStoreData.recommendCount)))
-            ? parseInt(nestedStoreData.recommendCount)
-            : 'N/A';
-        const newProductCount = (nestedStoreData.newProductCount != null && nestedStoreData.newProductCount !== 'N/A' && !isNaN(parseInt(nestedStoreData.newProductCount)))
-            ? parseInt(nestedStoreData.newProductCount)
-            : 'N/A';
-        
-        // 确保 URL 存在且不为空
-        const featuredProductsLink = (nestedStoreData.featuredPageUrl && nestedStoreData.featuredPageUrl !== 'N/A')
-            ? `<a href="${nestedStoreData.featuredPageUrl}" target="_blank">${recommendCount}</a>`
-            : recommendCount;
-
-        const newArrivalsLink = (nestedStoreData.newestArrivalsUrl && nestedStoreData.newestArrivalsUrl !== 'N/A')
-            ? `<a href="${nestedStoreData.newestArrivalsUrl}" target="_blank">${newProductCount}</a>`
-            : newProductCount;
-
-        return `
+    storeDataList.innerHTML = data.map((item, index) => `
         <tr>
             <td>${startIndex + index + 1}</td>
             <td>${item.site || 'N/A'}</td>
@@ -310,14 +285,37 @@ function renderStoreData(data) {
             <td>${item.feedback || 'N/A'}</td>
             <td>${item.rating || 'N/A'}</td>
             <td>${item.reviews || 'N/A'}</td>
-            <td>${featuredProductsLink}</td>
-            <td>${newArrivalsLink}</td>
+            <td>${item.recommendCount || 'N/A'}</td>
+            <td>${item.newProductCount || 'N/A'}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'amazonStores')">删除</button></td>
+            <td>
+                <button class="action-btn update-btn" onclick="updateData('${item.id}')">更新</button>
+                <button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button>
+            </td>
         </tr>
-    `}).join('');
+    `).join('');
     storeTotalCount.textContent = filteredStoreData.length;
     renderPagination(filteredStoreData.length, currentPageStore, storePagination, renderStoreData);
+}
+
+function renderKeywordData(data) {
+    if (data.length === 0) {
+        keywordDataList.innerHTML = '<tr><td colspan="6">没有找到任何关键词数据。</td></tr>';
+        return;
+    }
+    const startIndex = (currentPageKeyword - 1) * itemsPerPage;
+    keywordDataList.innerHTML = data.map((item, index) => `
+        <tr>
+            <td>${startIndex + index + 1}</td>
+            <td>${item.site || 'N/A'}</td>
+            <td><a href="${getKeywordUrl(item.keyword, item.site)}" target="_blank">${item.keyword || 'N/A'}</a></td>
+            <td>${item.count || 'N/A'}</td>
+            <td>${item.date || 'N/A'}</td>
+            <td><button class="action-btn delete-btn" onclick="deleteData('${item.id}')">删除</button></td>
+        </tr>
+    `).join('');
+    keywordTotalCount.textContent = filteredKeywordData.length;
+    renderPagination(filteredKeywordData.length, currentPageKeyword, keywordPagination, renderKeywordData);
 }
 
 function filterAndSearchStores() {
@@ -349,17 +347,13 @@ function filterAndSearchKeywords() {
 
 // --- 操作函数 ---
 
-async function deleteData(docId, collectionName) {
+async function deleteData(docId) {
     if (confirm('确定要删除这条数据吗？')) {
         try {
-            await db.collection(collectionName).doc(docId).delete();
-            if (collectionName === 'amazonStores') {
-                allStoreData = allStoreData.filter(item => item.id !== docId);
-                showSection('stores');
-            } else {
-                allKeywordData = allKeywordData.filter(item => item.id !== docId);
-                showSection('keywords');
-            }
+            await db.collection('scraped_data').doc(docId).delete();
+            allStoreData = allStoreData.filter(item => item.id !== docId);
+            allKeywordData = allKeywordData.filter(item => item.id !== docId);
+            showSection(storesSection.style.display !== 'none' ? 'stores' : 'keywords');
             alert('数据删除成功！');
         } catch (error) {
             alert(`删除失败: ${error.message}`);
@@ -367,6 +361,11 @@ async function deleteData(docId, collectionName) {
     }
 }
 window.deleteData = deleteData;
+
+async function updateData(docId) {
+    alert(`更新功能尚未实现，文档ID: ${docId}`);
+}
+window.updateData = updateData;
 
 // --- URL生成函数 ---
 
@@ -383,6 +382,7 @@ function getStoreUrl(sellerId, site) {
         'amazon.au': 'www.amazon.com.au'
     };
     const domain = domainMap[site] || 'www.amazon.com';
+    // ⭐ 修复后的正确 URL 格式
     return `https://${domain}/sp?seller=${sellerId}`;
 }
 

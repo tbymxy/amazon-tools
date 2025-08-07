@@ -280,9 +280,9 @@ function renderStoreData(data) {
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
-        // ⭐ 关键修复：确保 URL 存在且不为空，同时检查计数是否为有效数字
-        const recommendCount = (typeof item.recommendCount === 'number') ? item.recommendCount : 'N/A';
-        const newProductCount = (typeof item.newProductCount === 'number') ? item.newProductCount : 'N/A';
+        // ⭐ 修复后的关键逻辑：使用逻辑或 (||) 运算符，如果字段不存在，则默认使用 N/A
+        const recommendCount = item.recommendCount || 'N/A';
+        const newProductCount = item.newProductCount || 'N/A';
 
         const featuredProductsLink = (item.featuredPageUrl && item.featuredPageUrl !== 'N/A')
             ? `<a href="${item.featuredPageUrl}" target="_blank">${recommendCount}</a>`

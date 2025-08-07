@@ -5,55 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amazon 采集数据管理</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
     <header class="header">
-        <h1 class="header-title">Amazon 采集数据管理</h1>
-        <p class="header-subtitle">轻松管理你的店铺和关键词数据</p>
+        <h1>Amazon 采集数据管理</h1>
+        <div id="auth-status" class="auth-status">
+            <span id="user-email"></span>
+            <button id="logout-btn" class="copilot-amz-btn" style="display: none;">退出登录</button>
+        </div>
     </header>
 
-    <main class="main-container">
-        <div class="tabs">
-            <button class="tab-button active" data-tab="stores">店铺数据</button>
-            <button class="tab-button" data-tab="keywords">关键词数据</button>
+    <main class="main-content">
+        <div id="login-container" class="auth-form-container">
+            <div class="auth-form">
+                <h2>登录/注册</h2>
+                <input type="email" id="email-input" placeholder="邮箱" required>
+                <input type="password" id="password-input" placeholder="密码" required>
+                <button id="login-btn" class="copilot-amz-btn">登录</button>
+                <button id="register-btn" class="copilot-amz-btn">注册</button>
+                <p id="auth-error-message" class="error-message"></p>
+            </div>
         </div>
 
-        <div id="stores-tab" class="tab-content active">
+        <div id="dashboard-container" class="dashboard-container" style="display: none;">
             <div class="controls">
-                <input type="text" id="store-search-input" placeholder="搜索店铺ID或名称...">
-                <button id="store-search-btn">搜索</button>
-                <select id="store-sort-select">
-                    <option value="createdAt_desc">采集时间 (新到旧)</option>
-                    <option value="createdAt_asc">采集时间 (旧到新)</option>
-                    <option value="reviews_desc">Review数 (高到低)</option>
-                    <option value="reviews_asc">Review数 (低到高)</option>
-                </select>
-                <button id="store-refresh-btn">刷新</button>
+                <input type="text" id="search-input" placeholder="搜索关键词或店铺名..." class="search-input">
+                <select id="site-filter" class="select-filter">
+                    <option value="">所有站点</option>
+                    </select>
             </div>
-            <div id="stores-data" class="data-list">
-                </div>
-        </div>
 
-        <div id="keywords-tab" class="tab-content">
-            <div class="controls">
-                <input type="text" id="keyword-search-input" placeholder="搜索关键词...">
-                <button id="keyword-search-btn">搜索</button>
-                <select id="keyword-sort-select">
-                    <option value="date_desc">采集日期 (新到旧)</option>
-                    <option value="date_asc">采集日期 (旧到新)</option>
-                    <option value="count_desc">搜索结果数 (高到低)</option>
-                    <option value="count_asc">搜索结果数 (低到高)</option>
-                </select>
-                <button id="keyword-refresh-btn">刷新</button>
+            <div id="data-list" class="data-list">
+                <p>正在加载数据...</p>
             </div>
-            <div id="keywords-data" class="data-list">
-                </div>
         </div>
     </main>
 
-    <script src="main.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+
 </body>
 </html>

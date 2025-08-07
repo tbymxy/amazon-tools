@@ -29,15 +29,10 @@
         </div>
 
         <div id="dashboard-container" class="dashboard-container" style="display: none;">
-            <div class="controls">
-                <input type="text" id="search-input" placeholder="搜索关键词或店铺名..." class="search-input">
-                <select id="site-filter" class="select-filter">
-                    <option value="">所有站点</option>
-                    </select>
-            </div>
-
-            <div id="data-list" class="data-list">
-                <p>正在加载数据...</p>
+            <p>欢迎回来！请选择你要管理的数据类型。</p>
+            <div class="navigation-buttons">
+                <a href="stores.html" class="copilot-amz-btn">店铺数据管理</a>
+                <a href="keywords.html" class="copilot-amz-btn">关键词数据管理</a>
             </div>
         </div>
     </main>
@@ -45,7 +40,7 @@
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
-    <script src="script.js"></script>
+    <script src="auth.js"></script>
 
 </body>
 </html>

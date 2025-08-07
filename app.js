@@ -141,14 +141,12 @@ function showSection(section) {
         keywordsSection.style.display = 'none';
         showStoresBtn.classList.add('active-tab-btn');
         showKeywordsBtn.classList.remove('active-tab-btn');
-        // 渲染当前页面的数据
         renderStoreData(filteredStoreData.slice((currentPageStore - 1) * itemsPerPage, currentPageStore * itemsPerPage));
     } else {
         storesSection.style.display = 'none';
         keywordsSection.style.display = 'block';
         showStoresBtn.classList.remove('active-tab-btn');
         showKeywordsBtn.classList.add('active-tab-btn');
-        // 渲染当前页面的数据
         renderKeywordData(filteredKeywordData.slice((currentPageKeyword - 1) * itemsPerPage, currentPageKeyword * itemsPerPage));
     }
 }
@@ -224,6 +222,9 @@ async function fetchStoreData() {
             sites.add(data.site);
             return data;
         });
+
+        // ⭐ 默认排序：根据 rating 由大到小排序
+        allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
         sites.forEach(site => {
@@ -249,6 +250,13 @@ async function fetchKeywordData() {
             data.id = doc.id;
             sites.add(data.site);
             return data;
+        });
+
+        // ⭐ 默认排序：根据 date 由新到旧排序
+        allKeywordData.sort((a, b) => {
+            const dateA = new Date(a.date || '1970-01-01');
+            const dateB = new Date(b.date || '1970-01-01');
+            return dateB - dateA;
         });
 
         keywordSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -358,8 +366,6 @@ window.deleteData = deleteData;
 
 async function updateData(docId) {
     alert(`更新功能尚未实现，文档ID: ${docId}`);
-    // 这里可以添加更新数据的逻辑
-    // 例如：await db.collection('scraped_data').doc(docId).update({ ... });
 }
 window.updateData = updateData;
 

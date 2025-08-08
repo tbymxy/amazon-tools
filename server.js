@@ -152,31 +152,31 @@ app.post('/updateStore', async (req, res) => {
             lastUpdated: new Date()
         };
 
-        // **重要修改：添加日志**
+        // 写入 Firestore
         console.log('准备写入 Firestore 的数据:', updatedData);
-
-        const docRef = doc(db, 'amazonStores', id);
-        await setDoc(docRef, updatedData, { merge: true });
-
-        // **重要修改：添加日志**
-        console.log(`数据已发送到 Firestore。文档ID: ${id}`);
-        // ...
-
-        // ... 更新 Firestore ...
-        // ...
         
-        // 成功后，关闭浏览器并返回响应
-        await browser.close();
-        console.log(`Successfully updated store: ${id}`);
-        res.status(200).json({ success: true, data: updatedData });
+        // --- 核心改动 ---
+        // 使用 Promise.race 增加写入超时，防止无限等待
+        const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Firestore 写入超时，请检查网络或Firebase配置')), 10000)
+        );
+        
+        const firestoreUpdate = db.collection('amazonStores').doc(id).set(updatedData, { merge: true });
+
+        await Promise.race([firestoreUpdate, timeout]);
+        // --- 核心改动结束 ---
+        
+        console.log(`数据已成功写入 Firestore。文档ID: ${id}`);
+        
+        res.status(200).json({ success: true, message: `店铺 ${id} 更新成功` });
 
     } catch (error) {
-        // ...
-        // **重要修改:** 确保在任何错误发生时，浏览器都能被关闭
+        console.error(`更新店铺 ${id} 失败:`, error);
+        res.status(500).json({ success: false, error: '代理服务器内部错误' });
+    } finally {
         if (browser) {
             await browser.close();
         }
-        res.status(500).json({ success: false, error: error.message });
     }
 });
 

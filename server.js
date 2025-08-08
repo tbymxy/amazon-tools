@@ -1,39 +1,18 @@
-// server.js
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const puppeteer = require('puppeteer');
-const cors = require('cors'); // 确保 cors 模块已引入
-// ...
 
-const app = express();
-const port = 3000;
+// Firebase Admin SDK
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
-// 暂时将 CORS 配置为允许所有来源和所有请求方法
-// 这将排除跨域问题，用于测试
-// 成功后，可以再将 origin 限制为 'https://tbymxy.github.io'
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
-}));
-
-app.use(bodyParser.json());
-
-
-// ⚠️ 请将您的 Firebase Admin SDK 配置粘贴到这里 ⚠️
-// 1. 登录 Firebase 控制台
-// 2. 选择您的项目
-// 3. 进入 "项目设置" > "服务账号"
-// 4. 生成一个新的私钥并下载 JSON 文件
-// 5. 将该 JSON 文件中的内容复制到下面的对象中
-
+// 直接将你的私钥 JSON 数据嵌入到代码中
 const serviceAccount = {
   "type": "service_account",
   "project_id": "seller-data-hgy",
-  "private_key_id": "6765862928e26bc807fa54783952798f4514cd09",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDN155yIsu3oPAE\nO9I1r4j0P0KBBidsen3VO4CP6fKlbSxWS/vDVkW+GkG0aW5xg2Lm+RMCI31MEAqE\nM3yOgHGYcWtoSkgfg+wCQ2ggdSIz8ve4ksV1QvuyD/TDHyK+xZL8wszv7Jh0h0Nr\nQCjOcG+BtEauD2ag689NHzVBe2T3OZtAUnLkIfN/KvbiWKKTZDPja4yt4YNC18Da\ng8ESFZPpyYO5y8eWQzKUq74LMX5SJTVUSXncCKDstZsMMVWcm/KJEnzUwgeC5RUM\nYFCzlAwze7MQ3kDcgfpH0NB1ji+Q6O4SCAEpqrGjt7TZ7zeCao6Gy0QorjKf7cSC\ngPpjEjqTAgMBAAECggEALdrcPbHZrwEHpvHKnNILUNnsz0BXNPe+o2tbcvPbbZW5\n/El1/uhvpe9EdtPL2ja6KBkRbncIeRLTvOqZU0dyxtJxamytz3N8dm6cuipN4cO9\nAp2TplEzL9IVJQiBHX13Bp7At6v9tGvTjYdf78klVgAahLkClFOjvRr4Kqu57Ma+\nTJwCw4f4q3M5fJa6E31refqi7N91u6wZUniadrxpIrnq3rU3ikuW3peLhIMmyjBO\npF/8SADKwRdT8bMBphiLV56Ij44eW9ytqtT8VYTs9ZAGAm5tYmqpjaqmCvw+w0Bx\n9YXy6nM4tii3sR8CdB5Ynx5Dnk3Wz2/CsXfA6ThpiQKBgQD63mbC1jg/Uf55dKAV\nL+IME9Hd50qGkKcMtjD3Hv+452hqOZU4vJOXmJ+7ouDBUvqrwGj2pwVi825HrNqz\nW+iTQXElg7QM9XQ+UmF35cAan8N2SEwy9GDUHTxEnReXQwr9/snae6bZOfDgWwSt\nkyFT3/jI7qyW+QCYsMvIIz3bCwKBgQDSDXMqBqh6u9JV7QUovl/C8Yl7cTtvkIR8\nOxW+EFFzLt1A34Wyex5GEaJBO9yQijl9JGodT/HlRpjac55K6O02Q09hStpXERMA\nIokbMxrI6fcSgfwv7VYmEGorbYfcxx3kd7gUqhozD8oBqNsiFRPAnBfGYTcGotbv\nSO2bptmTmQKBgQCDqwjqR/77lPBoFMMUe647wodK3WMrH27d6B3pBhcXmDUgU5qz\nTZ51WYC0vbcTIJc6X+F3W5AjMDr4WYvryVhXOWjGVMrCZm2dbCWGBUr/bkzrnuSH\ndeYATlvcc0r3dBOn3ftZtb6LkrKPPpZE98ztNcdgxoxFLOmYOmqqX3zOowKBgQDD\nMMRntTAyfP6D4nD834tVN+Yt05cLoRu75Zvatoc5pb7sXcl7hXUoX5KLU/kuR4QM\nih4hhvydtfCsbuwVaEWmOv40xr4GUlN5uJ33rJGjSebSR//0+XMog/Bk0q+BtXZN\nrAJfEYKvGGj7CdI35aYpQePF8OiVPhTE3twN3AorYQKBgQDG6L84FOXJrDPvmulS\nYVShOtIRbcLuyHsIp5CxU6DgsDIG0kd0HOb/M+llbxQVbaUGwxVVJyzhjBrpJX3V\nM+BoO4+hAu3E605pbemCx5TCIkDM0lItlFYdPcmEcg1UTFEiECscyxoo75yZJDpI\nHWUaZok5WZ3lNL1zZxrNlIaWVw==\n-----END PRIVATE KEY-----\n",
+  "private_key_id": "f563af6a7ba0b1922722761898d96631e51848f9",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0sdluQM+8UN/X\ne0g9ksvVeTBLz2dwGUx9pXtJcoIgVTiOVkKcfic2hDq4uys4X9mT/aINnTxbSp0E\nzDt7emmRhQ4/IQW8xmZ+mOMCtWAxNunGZKCZY4b4GA5X5DRy43u7VNQypBbAyU3C\nWOX7OBHXwdWMVvLyBa5P8ZBdnSTaovl4FLWYSbgC21tsL/9nULs1xaVaLXJ5Cdfo\nXza8SHjTW58P5gichQJ7FkZV8be0W9p/MCR1c8OCp5vYQBOnq87fQAcRlPKWItlZ\nZccdI8KB2M9eJdB7E9uOQGCHsn14ZgN9hNZh3r4aIDJHonwjNty+fGmnng+/Glne\nzMB/p3tzAgMBAAECggEADq15r3qFRVM+c4b4ncPMWelPsoDE8rajX3tvMc6i4lR5\n1RoNrB+VONjx2iqd/qTOjDZokPmKOxIrAgZC+Ks/YwovV5JroGNvVO4/Vmt8RlMj\nFzH6V6tdfc6ab6pCVmjDFrrzx69Lh9pyPgyxlb/+twtwOMehUWaDu8uwAeKvaTD7\nr0EYegRz28Lc69gAZvzx9o/cOqVyiN2Yq/Y7qrYnupNuYlNcjr0dxi9f5C2BwyV7\ndE8vquibzpNxY3YZJpsANzC8NVzhimNwcM2syDIv3l0RDcn3AqnF5rPxi4tQIB9+\nBef1lilv20NrYA9/Mmn8ZMM2/79yYqMO783MaJN6zQKBgQDw4AM5zOOvsbFx1cYS\nUjIqOaOZKi6tlpbSUvpmc7Lt8wokaZubbrjPY/zj28GbpbPzBR4uV8b0koZYH2iF\nCuPuO1KrKTMwQ+MYFJYMqBe9N+IKOJbPQj5p9pA2De1zppipamdEEHJ+LsWkAZiZ\navXgpDvVf9CZnCu8Gi/4UWEIrQKBgQDACnUvLxDTSfzkhz7Z0s/958akH5B+Oi5G\n+znjZsSyP+9VAgIPBDd18WofMuCZDm1+5N5KjhfRvgiYxX1u+/0xQHVJVz74uHyM\nGFkQwi7C+OO7II52HpBQLAyUlXm/VVGpKU8s5KtRLG2wOaNM1Ofo5zmX4ldTRKUb\n9ZRVCdp4nwKBgQDHJP2lwO6RaIDDE7GhnhFZdbP7QrO60qC5HN9m6ssJDYHaHvIG\nrKDg3dLL8/j6nSHMjvOn7uxPcgDeRIFeVWWipaswVWy7v7S2SPbRWnvedaBNQQH2\nMtd1NeN+vT8O+bKHhq//xvVRu4utj6BBXvwPkNjjJ7wn88T4zFHSpD1sNQKBgAfB\npGAGf6B5EYzNZZ14pUv1C5HfcH+Yq/vT88+afAFTEcCWNy0SF4dc+9NMw8OK0KNa\nbRwHxzCCg2hgOaO868oMd3BB5No44VbrONWzch4P3WrWcsqUi3GhhdSOgP9YW9cA\nQyFmDwFVUQzYFx9oTgGbLTlUPACx+hU6Awa4QimzAoGAKYAFPktbJaSoOk16/pBZ\nulYVlE2KVZ12UhWm4u4ibyw6esslfYlS96DGA6G4YDbi7WZh+lv28evo/VZtgyUp\nOA0o8iFqJ4t8vvSy4h7kdlVMuE1R2vw+RR4wooTfhXv5w1l2+ipls3HpWE4pO2Mr\nL6ya3ChNs9y0zZ7KyznuiOM=\n-----END PRIVATE KEY-----\n",
   "client_email": "firebase-adminsdk-fbsvc@seller-data-hgy.iam.gserviceaccount.com",
   "client_id": "114853517685530512823",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -41,8 +20,7 @@ const serviceAccount = {
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40seller-data-hgy.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
-}
-
+};
 
 // 初始化 Firebase Admin SDK
 initializeApp({
@@ -50,31 +28,22 @@ initializeApp({
 });
 const db = getFirestore();
 
-// 获取 Featured Count 的辅助函数（使用 Puppeteer）
-async function getFeaturedCount(page, url) {
-    try {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        const countText = await page.evaluate(() => {
-            const h2 = document.querySelector('#search > span > div > h1 > div > div:nth-child(1) > div > h2 > span:nth-child(1)');
-            return h2 ? h2.textContent.trim() : '';
-        });
-        const match = countText.match(/(?:共|over|超過|of over)\s*([\d,\.]+)\s*(?:個|results)?/i);
-        if (match) {
-            return match[1].replace(/[\.,]/g, '');
-        }
-        return 'N/A';
-    } catch (e) {
-        console.error(`Error fetching featured count for URL ${url}:`, e);
-        return 'N/A';
-    }
-}
+const app = express();
+const port = 3000;
 
-// 代理更新店铺数据的 API
+// CORS 配置: 允许来自你的 GitHub Pages 页面的请求
+app.use(cors({
+    origin: 'https://tbymxy.github.io'
+}));
+app.use(bodyParser.json());
+
+// 抓取并更新 Firestore 的主路由
 app.post('/updateStore', async (req, res) => {
     const { id, site, sellerId } = req.body;
 
     if (!id || !site || !sellerId) {
-        return res.status(400).json({ success: false, error: '缺少 ID, site 或 sellerId' });
+        console.error('错误: 缺少必要的请求参数。');
+        return res.status(400).json({ success: false, error: '缺少必要的参数: id, site, 或 sellerId' });
     }
 
     console.log(`Received request to update store: ${id}, site: ${site}, sellerId: ${sellerId}`);
@@ -89,27 +58,18 @@ app.post('/updateStore', async (req, res) => {
         const storeUrl = `https://www.${site}/sp?seller=${sellerId}`;
         console.log(`正在访问店铺页面: ${storeUrl}`);
         
-        // **重要修改:** 增加导航超时，并处理异常
         try {
             await page.goto(storeUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         } catch (e) {
             console.error(`访问店铺页面超时或失败: ${e.message}`);
-            // 如果超时，我们仍然尝试继续，因为可能是页面加载慢
         }
         
         const data = await page.evaluate(() => {
-            // ... 你的数据抓取代码 ...
             const getSafeText = (sel) => {
                 const el = document.querySelector(sel);
                 return el ? el.textContent.trim() : 'N/A';
             };
 
-            const sellerName = getSafeText('#seller-name');
-            const feedbackRaw = getSafeText('#seller-info-feedback-summary > span > a > b');
-            const rating = getSafeText('#rating-365d-num > span.ratings-reviews-count');
-            const reviewsRaw = getSafeText('#effective-timeperiod-rating-year-description');
-            
-            // 数据清洗（在前端和后端都保留，以防万一）
             const cleanFeedback = (feedback) => {
                 const match = String(feedback || '').match(/(\d{1,3})\s*[％%]/);
                 return match ? `${match[1]}%` : 'N/A';
@@ -119,6 +79,11 @@ app.post('/updateStore', async (req, res) => {
                 return String(text).replace(/(\d),(\d)/g, '$1.$2');
             };
 
+            const sellerName = getSafeText('#seller-name');
+            const feedbackRaw = getSafeText('#seller-info-feedback-summary > span > a > b');
+            const rating = getSafeText('#rating-365d-num > span.ratings-reviews-count');
+            const reviewsRaw = getSafeText('#effective-timeperiod-rating-year-description');
+
             return {
                 sellerName: sellerName,
                 feedback: cleanFeedback(feedbackRaw),
@@ -126,26 +91,26 @@ app.post('/updateStore', async (req, res) => {
                 reviews: cleanNumberWithDot(reviewsRaw),
             };
         });
-        console.log('抓取到的数据:', data);
 
+        console.log('抓取到的数据:', data);
 
         // 访问搜索页面获取 featuredCount
         const marketplaceId = await page.evaluate(() => {
-            // ... 你的 marketplaceId 获取逻辑 ...
             const url = window.location.href;
             if (url.includes('.co.jp')) return 'A1VC38T7YXB528';
             if (url.includes('.com')) return 'ATVPDKIKX0DER';
-            // ... (可以添加更多站点的判断逻辑)
+            if (url.includes('.co.uk')) return 'A1F83G8C2ARO7P'; // 修复 marketplaceID
+            if (url.includes('.de')) return 'A1PA6795UKMFR9';
+            if (url.includes('.fr')) return 'A13V1IB3VIYZZH';
             return '';
         });
         const recommendUrl = `https://www.${site}/s?me=${sellerId}&marketplaceID=${marketplaceId}`;
         
         console.log(`正在访问 Featured 页面: ${recommendUrl}`);
 
-        // **重要修改:** 增加导航超时
         const recommendCount = await getFeaturedCount(page, recommendUrl);
 
-        // ... 将所有数据整合 ...
+        // 将所有数据整合
         const updatedData = {
             ...data,
             featuredCount: recommendCount,
@@ -155,16 +120,15 @@ app.post('/updateStore', async (req, res) => {
         // 写入 Firestore
         console.log('准备写入 Firestore 的数据:', updatedData);
         
-        // --- 核心改动 ---
-        // 使用 Promise.race 增加写入超时，防止无限等待
+        const docRef = db.collection('amazonStores').doc(id);
+        
+        // 增加写入超时，防止无限等待
         const timeout = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Firestore 写入超时，请检查网络或Firebase配置')), 10000)
         );
-        
-        const firestoreUpdate = db.collection('amazonStores').doc(id).set(updatedData, { merge: true });
+        const firestoreUpdate = docRef.set(updatedData, { merge: true });
 
         await Promise.race([firestoreUpdate, timeout]);
-        // --- 核心改动结束 ---
         
         console.log(`数据已成功写入 Firestore。文档ID: ${id}`);
         
@@ -172,6 +136,10 @@ app.post('/updateStore', async (req, res) => {
 
     } catch (error) {
         console.error(`更新店铺 ${id} 失败:`, error);
+        // 确保在任何错误发生时，浏览器都能被关闭
+        if (browser) {
+            await browser.close();
+        }
         res.status(500).json({ success: false, error: '代理服务器内部错误' });
     } finally {
         if (browser) {
@@ -180,24 +148,24 @@ app.post('/updateStore', async (req, res) => {
     }
 });
 
-// `getFeaturedCount` 函数也需要增加超时和日志
+// getFeaturedCount 函数
 async function getFeaturedCount(page, url) {
     try {
         console.log(`[getFeaturedCount] 正在访问 URL: ${url}`);
-        // **重要修改:** 增加超时选项
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
         const countText = await page.evaluate(() => {
             const h2 = document.querySelector('#search > span > div > h1 > div > div:nth-child(1) > div > h2 > span:nth-child(1)');
             return h2 ? h2.textContent.trim() : '';
         });
-        // ... 你的数据清洗逻辑 ...
-        return 'N/A';
+        
+        // 从文本中提取数字
+        const match = countText.match(/\d+/);
+        return match ? parseInt(match[0], 10) : 'N/A';
     } catch (e) {
         console.error(`[getFeaturedCount] 访问页面或抓取数据失败:`, e);
         return 'N/A';
     }
 }
-
 
 app.listen(port, () => {
     console.log(`Proxy server listening at http://localhost:${port}`);

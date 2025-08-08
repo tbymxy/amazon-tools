@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon 数据管理</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <div id="auth-container" class="auth-card">
+        <h2>请登录</h2>
+        <form id="login-form">
+            <input type="email" id="login-email" placeholder="邮箱" required>
+            <input type="password" id="login-password" placeholder="密码" required>
+            <button type="submit" class="btn primary-btn">登录</button>
+            <p id="auth-error" class="error-msg"></p>
+        </form>
+    </div>
+
+    <div id="main-container" class="hidden">
+        <header class="app-header">
+            <div class="header-left">
+                <div class="tabs">
+                    <button id="stores-tab" class="active tab-btn">店铺数据</button>
+                    <button id="keywords-tab" class="tab-btn">关键词数据</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="logout-btn" class="btn secondary-btn">退出登录</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div id="loading-spinner" class="spinner-container hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <div id="stores-view" class="view-container card">
+                <div class="card-header">
+                    <h2>店铺数据</h2>
+                    <span class="stats-bar">
+                        总计: <span id="store-count">0</span>
+                    </span>
+                    <button id="update-all-stores-btn" class="btn secondary-btn" style="margin-left: auto;">一键更新全部店铺</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">序号</th>
+                                <th style="width: 100px;">站点</th>
+                                <th style="min-width: 150px;">店铺名</th>
+                                <th style="width: 80px;">Feedback</th>
+                                <th id="rating-header" style="width: 80px;">Rating <span class="sort-icon">&#x25BC;</span></th>
+                                <th style="width: 80px;">Reviews</th>
+                                <th style="width: 100px;">Featured</th>
+                                <th style="width: 120px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="store-table-body">
+                            </tbody>
+                    </table>
+                    <p id="stores-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+                <div id="store-pagination" class="pagination"></div>
+            </div>
+
+            <div id="keywords-view" class="view-container card hidden">
+                <div class="card-header">
+                    <h2>关键词数据</h2>
+                    <span class="stats-bar">
+                        总计: <span id="keyword-count">0</span>
+                    </span>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>站点</th>
+                                <th>关键词</th>
+                                <th>中文关键词</th>
+                                <th>结果数</th>
+                                <th id="keyword-date-header">采集日期 <span class="sort-icon">&#x25BC;</span></th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keyword-table-body">
+                            </tbody>
+                    </table>
+                    <p id="keywords-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+                <div id="keyword-pagination" class="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>

@@ -152,20 +152,44 @@ app.post('/updateStore', async (req, res) => {
 async function getFeaturedCount(page, url) {
     try {
         console.log(`[getFeaturedCount] 正在访问 URL: ${url}`);
+        // 访问页面时增加超时
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        const countText = await page.evaluate(() => {
-            const h2 = document.querySelector('#search > span > div > h1 > div > div:nth-child(1) > div > h2 > span:nth-child(1)');
-            return h2 ? h2.textContent.trim() : '';
-        });
         
+        // 使用更具鲁棒性的方法来查找元素
+        const countText = await page.evaluate(() => {
+            // 尝试使用 aria-label 定位包含搜索结果数量的元素
+            let resultHeader = document.querySelector('div[data-component-type="s-search-result-info"]');
+            if (resultHeader) {
+                const h2 = resultHeader.querySelector('h2 > span');
+                if (h2) return h2.textContent.trim();
+            }
+
+            // 备用方案：寻找包含特定文本的 h2 元素
+            const h2Elements = document.querySelectorAll('h2');
+            for (const h2 of h2Elements) {
+                const text = h2.textContent.trim();
+                // 检查文本是否包含 "results" 或 "results for"
+                if (text.includes('results')) {
+                    // 如果找到，进一步查找内部的 span 元素
+                    const span = h2.querySelector('span');
+                    if (span) return span.textContent.trim();
+                }
+            }
+
+            // 如果所有方法都失败，返回空字符串
+            return '';
+        });
+
         // 从文本中提取数字
-        const match = countText.match(/\d+/);
-        return match ? parseInt(match[0], 10) : 'N/A';
+        const match = countText.match(/(\d[\d,.]*)/);
+        return match ? parseInt(match[0].replace(/[,.]/g, ''), 10) : 'N/A';
     } catch (e) {
         console.error(`[getFeaturedCount] 访问页面或抓取数据失败:`, e);
         return 'N/A';
     }
 }
+
+
 
 app.listen(port, () => {
     console.log(`Proxy server listening at http://localhost:${port}`);

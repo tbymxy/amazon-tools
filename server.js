@@ -126,6 +126,8 @@ app.post('/updateStore', async (req, res) => {
                 reviews: cleanNumberWithDot(reviewsRaw),
             };
         });
+        console.log('抓取到的数据:', data);
+
 
         // 访问搜索页面获取 featuredCount
         const marketplaceId = await page.evaluate(() => {

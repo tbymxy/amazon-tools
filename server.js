@@ -146,6 +146,22 @@ app.post('/updateStore', async (req, res) => {
         const recommendCount = await getFeaturedCount(page, recommendUrl);
 
         // ... 将所有数据整合 ...
+        const updatedData = {
+            ...data,
+            featuredCount: recommendCount,
+            lastUpdated: new Date()
+        };
+
+        // **重要修改：添加日志**
+        console.log('准备写入 Firestore 的数据:', updatedData);
+
+        const docRef = doc(db, 'amazonStores', id);
+        await setDoc(docRef, updatedData, { merge: true });
+
+        // **重要修改：添加日志**
+        console.log(`数据已发送到 Firestore。文档ID: ${id}`);
+        // ...
+
         // ... 更新 Firestore ...
         // ...
         

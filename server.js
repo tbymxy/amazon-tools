@@ -11,7 +11,7 @@ const port = 3000;
 
 // 解决跨域问题，允许来自您 GitHub Pages 的请求
 app.use(cors({
-    origin: 'https://tbymxy.github.io'
+    origin: 'https://tbymxy.github.io/amazon-tools/'
 }));
 app.use(bodyParser.json());
 
@@ -151,4 +151,5 @@ app.listen(port, () => {
     console.log('请确保已安装Node.js, Express, Puppeteer 和 Firebase Admin SDK');
     console.log('运行以下命令安装依赖: npm install express body-parser cors puppeteer firebase-admin');
     console.log('请在浏览器中打开您的前端页面，即可通过该服务更新数据。');
+
 });

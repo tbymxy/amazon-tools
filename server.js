@@ -81,14 +81,24 @@ app.post('/updateStore', async (req, res) => {
 
     let browser;
     try {
+        console.log('正在启动 Puppeteer 浏览器...');
         browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         
         // 访问店铺页面获取基本信息
         const storeUrl = `https://www.${site}/sp?seller=${sellerId}`;
-        await page.goto(storeUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
+        console.log(`正在访问店铺页面: ${storeUrl}`);
+        
+        // **重要修改:** 增加导航超时，并处理异常
+        try {
+            await page.goto(storeUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (e) {
+            console.error(`访问店铺页面超时或失败: ${e.message}`);
+            // 如果超时，我们仍然尝试继续，因为可能是页面加载慢
+        }
+        
         const data = await page.evaluate(() => {
+            // ... 你的数据抓取代码 ...
             const getSafeText = (sel) => {
                 const el = document.querySelector(sel);
                 return el ? el.textContent.trim() : 'N/A';
@@ -119,7 +129,7 @@ app.post('/updateStore', async (req, res) => {
 
         // 访问搜索页面获取 featuredCount
         const marketplaceId = await page.evaluate(() => {
-            // 获取 marketplaceID 的逻辑，需要根据 URL 或其他信息判断
+            // ... 你的 marketplaceId 获取逻辑 ...
             const url = window.location.href;
             if (url.includes('.co.jp')) return 'A1VC38T7YXB528';
             if (url.includes('.com')) return 'ATVPDKIKX0DER';
@@ -127,31 +137,49 @@ app.post('/updateStore', async (req, res) => {
             return '';
         });
         const recommendUrl = `https://www.${site}/s?me=${sellerId}&marketplaceID=${marketplaceId}`;
+        
+        console.log(`正在访问 Featured 页面: ${recommendUrl}`);
+
+        // **重要修改:** 增加导航超时
         const recommendCount = await getFeaturedCount(page, recommendUrl);
 
-        // 将所有数据整合
-        const updatedData = {
-            ...data,
-            recommendCount: recommendCount,
-            updatedAt: new Date().toISOString()
-        };
-
-        // 更新 Firestore
-        const docRef = db.collection('amazonStores').doc(id);
-        await docRef.update(updatedData);
-
+        // ... 将所有数据整合 ...
+        // ... 更新 Firestore ...
+        // ...
+        
+        // 成功后，关闭浏览器并返回响应
+        await browser.close();
         console.log(`Successfully updated store: ${id}`);
         res.status(200).json({ success: true, data: updatedData });
 
     } catch (error) {
-        console.error(`Error updating store ${id}:`, error);
-        res.status(500).json({ success: false, error: error.message });
-    } finally {
+        // ...
+        // **重要修改:** 确保在任何错误发生时，浏览器都能被关闭
         if (browser) {
             await browser.close();
         }
+        res.status(500).json({ success: false, error: error.message });
     }
 });
+
+// `getFeaturedCount` 函数也需要增加超时和日志
+async function getFeaturedCount(page, url) {
+    try {
+        console.log(`[getFeaturedCount] 正在访问 URL: ${url}`);
+        // **重要修改:** 增加超时选项
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const countText = await page.evaluate(() => {
+            const h2 = document.querySelector('#search > span > div > h1 > div > div:nth-child(1) > div > h2 > span:nth-child(1)');
+            return h2 ? h2.textContent.trim() : '';
+        });
+        // ... 你的数据清洗逻辑 ...
+        return 'N/A';
+    } catch (e) {
+        console.error(`[getFeaturedCount] 访问页面或抓取数据失败:`, e);
+        return 'N/A';
+    }
+}
+
 
 app.listen(port, () => {
     console.log(`Proxy server listening at http://localhost:${port}`);

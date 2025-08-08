@@ -152,27 +152,26 @@ function renderStoreData(data) {
     }
     const startIndex = (currentPageStore - 1) * itemsPerPage;
     storeDataList.innerHTML = data.map((item, index) => {
-        // 关键修复: 从 amazonStores 子集合中获取数据
+        // 从 amazonStores 子集合中获取数据
         const amazonStoreData = item.amazonStores || {};
 
-        // 移除链接，只显示值或 'N/A'
-        const recommendCount = amazonStoreData.recommendCount || 'N/A';
-        const newProductCount = amazonStoreData.newProductCount || 'N/A';
+        // 数据清洗：移除 Feedback 中的逗号
+        const cleanedFeedback = (amazonStoreData.feedback || 'N/A').toString().replace(/,/g, '');
 
         return `
         <tr>
             <td>${startIndex + index + 1}</td>
             <td>${item.site || 'N/A'}</td>
             <td><a href="${getStoreUrl(item.sellerId, item.site)}" target="_blank">${item.sellerName || 'N/A'}</a></td>
-            <td>${item.feedback || 'N/A'}</td>
-            <td>${item.rating || 'N/A'}</td>
-            <td>${item.reviews || 'N/A'}</td>
-            <td>${recommendCount}</td>
-            <td>${newProductCount}</td>
+            <td>${cleanedFeedback}</td>
+            <td>${amazonStoreData.rating || 'N/A'}</td>
+            <td>${amazonStoreData.reviews || 'N/A'}</td>
+            <td>${amazonStoreData.recommendCount || 'N/A'}</td>
+            <td>${amazonStoreData.newProductCount || 'N/A'}</td>
             <td>${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
             <td>
                 <button class="action-btn update-btn" onclick="updateData('${item.id}')">更新</button>
-                <button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'amazonStores')">删除</button>
+                <button class="action-btn delete-btn" onclick="deleteData('${item.id}', 'scraped_data')">删除</button>
             </td>
         </tr>
     `}).join('');
@@ -258,17 +257,16 @@ window.updateData = updateData;
 async function fetchStoreData() {
     storeDataList.innerHTML = '<tr><td colspan="10">正在加载店铺数据...</td></tr>';
     try {
-        const snapshot = await db.collection('amazonStores').get();
+        // 恢复从 scraped_data 集合中获取店铺数据
+        const snapshot = await db.collection('scraped_data').where('sellerId', '!=', null).get();
         const sites = new Set();
         allStoreData = snapshot.docs.map(doc => {
             const data = doc.data();
+            data.id = doc.id;
             sites.add(data.site);
-            return {
-                id: doc.id,
-                ...data
-            };
+            return data;
         });
-        
+
         allStoreData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         
         storeSiteFilter.innerHTML = '<option value="">所有站点</option>';
@@ -325,6 +323,7 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) userEmailSpan.textContent = user.email;
         if (logoutBtn) logoutBtn.style.display = 'inline-block';
         
+        // 第一次登录时加载数据
         if (allStoreData.length === 0) {
             fetchStoreData();
         }

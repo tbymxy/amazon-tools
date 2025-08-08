@@ -1,4 +1,6 @@
 // server.js
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const express = require('express');
 const bodyParser = require('body-parser');
 const puppeteer = require('puppeteer');

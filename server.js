@@ -2,18 +2,23 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const puppeteer = require('puppeteer');
-const cors = require('cors');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const cors = require('cors'); // 确保 cors 模块已引入
+// ...
 
 const app = express();
 const port = 3000;
 
-// 解决跨域问题，允许来自您 GitHub Pages 的请求
+// 暂时将 CORS 配置为允许所有来源和所有请求方法
+// 这将排除跨域问题，用于测试
+// 成功后，可以再将 origin 限制为 'https://tbymxy.github.io'
 app.use(cors({
-    origin: 'https://tbymxy.github.io/amazon-tools/'
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
 }));
+
 app.use(bodyParser.json());
+
 
 // ⚠️ 请将您的 Firebase Admin SDK 配置粘贴到这里 ⚠️
 // 1. 登录 Firebase 控制台
@@ -151,5 +156,4 @@ app.listen(port, () => {
     console.log('请确保已安装Node.js, Express, Puppeteer 和 Firebase Admin SDK');
     console.log('运行以下命令安装依赖: npm install express body-parser cors puppeteer firebase-admin');
     console.log('请在浏览器中打开您的前端页面，即可通过该服务更新数据。');
-
 });

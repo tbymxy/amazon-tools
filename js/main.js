@@ -27,7 +27,7 @@ const storesTab = document.getElementById('stores-tab');
 const keywordsTab = document.getElementById('keywords-tab');
 const storesView = document.getElementById('stores-view');
 const keywordsView = document.getElementById('keywords-view');
-const loadingSpinner = document.getElementById('loading-spinner');
+const loadingSkeleton = document.getElementById('loading-skeleton');
 
 const storeTableBody = document.getElementById('store-table-body');
 const storeNoData = document.getElementById('stores-no-data');
@@ -37,10 +37,18 @@ const storeCountSpan = document.getElementById('store-count');
 const keywordCountSpan = document.getElementById('keyword-count');
 const storePaginationDiv = document.getElementById('store-pagination');
 const keywordPaginationDiv = document.getElementById('keyword-pagination');
+const ratingHeader = document.getElementById('rating-header');
+const keywordDateHeader = document.getElementById('keyword-date-header');
+const storeFiltersDiv = document.getElementById('store-filters');
+const keywordFiltersDiv = document.getElementById('keyword-filters');
 
-// 分页和排序状态
+
+// 分页、排序和筛选状态
 let storeData = [];
 let keywordData = [];
+let filteredStoreData = [];
+let filteredKeywordData = [];
+
 let storeCurrentPage = 1;
 let keywordCurrentPage = 1;
 const itemsPerPage = 20;
@@ -50,9 +58,45 @@ let storeSortDir = 'desc';
 let keywordSortKey = 'date';
 let keywordSortDir = 'desc';
 
+let activeStoreSiteFilter = 'all';
+let activeKeywordSiteFilter = 'all';
+
+// 亚马逊站点域名与缩写映射
+const SITE_MAP = {
+    "amazon.com": "US",
+    "amazon.co.uk": "UK",
+    "amazon.de": "DE",
+    "amazon.fr": "FR",
+    "amazon.es": "ES",
+    "amazon.it": "IT",
+    "amazon.co.jp": "JP",
+    "amazon.ca": "CA",
+    "amazon.com.au": "AU",
+    "amazon.com.br": "BR",
+    "amazon.com.mx": "MX",
+    "amazon.in": "IN",
+    "amazon.cn": "CN",
+    "amazon.nl": "NL",
+    "amazon.sg": "SG",
+    "amazon.sa": "SA",
+    "amazon.ae": "AE",
+    "amazon.com.tr": "TR",
+    "amazon.se": "SE",
+    "amazon.pl": "PL",
+    "amazon.com.eg": "EG",
+    "amazon.com.be": "BE",
+    "amazon.co.za": "ZA"
+};
+
+// 根据域名获取站点缩写
+function getSiteAbbreviation(domain) {
+    return SITE_MAP[domain] || domain;
+}
+
 // --- 数据清洗函数 ---
 function cleanFeedback(feedback) {
-    const match = String(feedback || '').match(/(\d{1,3})\s*[％%]/);
+    if (!feedback) return 'N/A';
+    const match = String(feedback).match(/(\d{1,3})\s*[％%]/);
     return match ? `${match[1]}%` : 'N/A';
 }
 function cleanFeaturedCount(text) {
@@ -106,13 +150,13 @@ auth.onAuthStateChanged((user) => {
 });
 
 function showLoading() {
-    loadingSpinner.classList.remove('hidden');
+    loadingSkeleton.classList.remove('hidden');
     storesView.classList.add('hidden');
     keywordsView.classList.add('hidden');
 }
 
 function hideLoading() {
-    loadingSpinner.classList.add('hidden');
+    loadingSkeleton.classList.add('hidden');
     if (storesTab.classList.contains('active')) {
         storesView.classList.remove('hidden');
     } else {
@@ -125,8 +169,7 @@ async function fetchStoreData() {
     try {
         const snapshot = await db.collection('amazonStores').get();
         storeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        sortStoreData();
-        renderStoreTable();
+        processStoreData();
     } catch (error) {
         console.error("获取店铺数据失败: ", error);
         alert("获取店铺数据失败，请检查控制台");
@@ -139,8 +182,7 @@ async function fetchKeywordData() {
     try {
         const snapshot = await db.collection('amazonKeywords').get();
         keywordData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        sortKeywordData();
-        renderKeywordTable();
+        processKeywordData();
     } catch (error) {
         console.error("获取关键词数据失败: ", error);
         alert("获取关键词数据失败，请检查控制台");
@@ -149,9 +191,26 @@ async function fetchKeywordData() {
     }
 }
 
-// --- 排序功能 ---
-function sortStoreData() {
-    storeData.sort((a, b) => {
+function processStoreData() {
+    renderSiteFilters(storeFiltersDiv, storeData, 'store');
+    filterAndSortStoreData();
+    renderStoreTable();
+}
+
+function processKeywordData() {
+    renderSiteFilters(keywordFiltersDiv, keywordData, 'keyword');
+    filterAndSortKeywordData();
+    renderKeywordTable();
+}
+
+// --- 筛选和排序功能 ---
+function filterAndSortStoreData() {
+    filteredStoreData = storeData.filter(item => {
+        if (activeStoreSiteFilter === 'all') return true;
+        return getSiteAbbreviation(item.site) === activeStoreSiteFilter;
+    });
+
+    filteredStoreData.sort((a, b) => {
         let valA = a[storeSortKey];
         let valB = b[storeSortKey];
         
@@ -169,8 +228,13 @@ function sortStoreData() {
     });
 }
 
-function sortKeywordData() {
-    keywordData.sort((a, b) => {
+function filterAndSortKeywordData() {
+    filteredKeywordData = keywordData.filter(item => {
+        if (activeKeywordSiteFilter === 'all') return true;
+        return getSiteAbbreviation(item.site) === activeKeywordSiteFilter;
+    });
+
+    filteredKeywordData.sort((a, b) => {
         let valA = a[keywordSortKey];
         let valB = b[keywordSortKey];
         if (keywordSortKey === 'date') {
@@ -184,18 +248,96 @@ function sortKeywordData() {
     });
 }
 
+// 渲染站点筛选按钮
+function renderSiteFilters(container, data, type) {
+    container.innerHTML = '';
+    const sites = new Set(data.map(item => getSiteAbbreviation(item.site)).filter(site => site !== 'N/A'));
+    const sortedSites = Array.from(sites).sort();
+
+    const allBtn = document.createElement('button');
+    allBtn.textContent = '全部站点';
+    allBtn.classList.add('btn', 'filter-btn');
+    if ((type === 'store' && activeStoreSiteFilter === 'all') || (type === 'keyword' && activeKeywordSiteFilter === 'all')) {
+        allBtn.classList.add('active');
+    }
+    allBtn.addEventListener('click', () => {
+        if (type === 'store') {
+            activeStoreSiteFilter = 'all';
+            storeCurrentPage = 1;
+            filterAndSortStoreData();
+            renderStoreTable();
+        } else {
+            activeKeywordSiteFilter = 'all';
+            keywordCurrentPage = 1;
+            filterAndSortKeywordData();
+            renderKeywordTable();
+        }
+        updateFilterButtonState(container, 'all');
+    });
+    container.appendChild(allBtn);
+
+    sortedSites.forEach(site => {
+        const btn = document.createElement('button');
+        btn.textContent = site;
+        btn.classList.add('btn', 'filter-btn');
+        if ((type === 'store' && activeStoreSiteFilter === site) || (type === 'keyword' && activeKeywordSiteFilter === site)) {
+            btn.classList.add('active');
+        }
+        btn.addEventListener('click', () => {
+            if (type === 'store') {
+                activeStoreSiteFilter = site;
+                storeCurrentPage = 1;
+                filterAndSortStoreData();
+                renderStoreTable();
+            } else {
+                activeKeywordSiteFilter = site;
+                keywordCurrentPage = 1;
+                filterAndSortKeywordData();
+                renderKeywordTable();
+            }
+            updateFilterButtonState(container, site);
+        });
+        container.appendChild(btn);
+    });
+}
+
+function updateFilterButtonState(container, activeSite) {
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (activeSite === 'all') {
+        // 使用精确的文本匹配来确保找到"全部站点"按钮
+        container.querySelector('button').classList.add('active');
+    } else {
+        container.querySelector(`button`).classList.add('active');
+        const activeBtn = Array.from(container.querySelectorAll('button')).find(btn => btn.textContent === activeSite);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+}
+
+// 更新排序图标
+function updateSortIcon(headerElement, sortDir) {
+    const sortIcon = headerElement.querySelector('.sort-icon');
+    if (sortIcon) {
+        sortIcon.textContent = sortDir === 'asc' ? '▲' : '▼';
+    }
+}
+
 // 绑定排序事件
-document.getElementById('rating-header').addEventListener('click', () => {
+ratingHeader.addEventListener('click', () => {
     storeSortDir = storeSortDir === 'desc' ? 'asc' : 'desc';
     storeSortKey = 'rating';
-    sortStoreData();
+    filterAndSortStoreData();
+    updateSortIcon(ratingHeader, storeSortDir);
     renderStoreTable();
 });
 
-document.getElementById('keyword-date-header').addEventListener('click', () => {
+keywordDateHeader.addEventListener('click', () => {
     keywordSortDir = keywordSortDir === 'desc' ? 'asc' : 'desc';
     keywordSortKey = 'date';
-    sortKeywordData();
+    filterAndSortKeywordData();
+    updateSortIcon(keywordDateHeader, keywordSortDir);
     renderKeywordTable();
 });
 
@@ -203,16 +345,16 @@ document.getElementById('keyword-date-header').addEventListener('click', () => {
 function renderStoreTable() {
     storeTableBody.innerHTML = '';
     storeNoData.classList.add('hidden');
-    storeCountSpan.textContent = storeData.length;
+    storeCountSpan.textContent = filteredStoreData.length;
 
-    if (storeData.length === 0) {
+    if (filteredStoreData.length === 0) {
         storeNoData.classList.remove('hidden');
         return;
     }
 
-    const totalPages = Math.ceil(storeData.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredStoreData.length / itemsPerPage);
     const startIndex = (storeCurrentPage - 1) * itemsPerPage;
-    const paginatedData = storeData.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedData = filteredStoreData.slice(startIndex, startIndex + itemsPerPage);
 
     paginatedData.forEach((item, index) => {
         const tr = document.createElement('tr');
@@ -228,7 +370,7 @@ function renderStoreTable() {
 
         tr.innerHTML = `
             <td>${startIndex + index + 1}</td>
-            <td data-tooltip="${item.site || 'N/A'}">${item.site || 'N/A'}</td>
+            <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
             <td data-tooltip="${item.sellerName || 'N/A'}">${sellerNameLink}</td>
             <td data-tooltip="${item.feedback || 'N/A'}">${cleanFeedback(item.feedback)}</td>
             <td data-tooltip="${item.rating || 'N/A'}">${cleanNumberWithDot(item.rating)}</td>
@@ -250,16 +392,16 @@ function renderStoreTable() {
 function renderKeywordTable() {
     keywordTableBody.innerHTML = '';
     keywordNoData.classList.add('hidden');
-    keywordCountSpan.textContent = keywordData.length;
+    keywordCountSpan.textContent = filteredKeywordData.length;
 
-    if (keywordData.length === 0) {
+    if (filteredKeywordData.length === 0) {
         keywordNoData.classList.remove('hidden');
         return;
     }
 
-    const totalPages = Math.ceil(keywordData.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredKeywordData.length / itemsPerPage);
     const startIndex = (keywordCurrentPage - 1) * itemsPerPage;
-    const paginatedData = keywordData.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedData = filteredKeywordData.slice(startIndex, startIndex + itemsPerPage);
 
     paginatedData.forEach((item, index) => {
         const tr = document.createElement('tr');
@@ -273,7 +415,7 @@ function renderKeywordTable() {
 
         tr.innerHTML = `
             <td>${startIndex + index + 1}</td>
-            <td data-tooltip="${item.site || 'N/A'}">${item.site || 'N/A'}</td>
+            <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
             <td data-tooltip="${item.keyword || 'N/A'}">${keywordLink}</td>
             <td data-tooltip="${item.keywordZh || 'N/A'}">${item.keywordZh || 'N/A'}</td>
             <td data-tooltip="${item.count || 'N/A'}">${cleanFeaturedCount(item.count)}</td>
@@ -356,6 +498,8 @@ storesTab.addEventListener('click', () => {
     keywordsView.classList.add('hidden');
     storeCurrentPage = 1;
     if (storeData.length === 0) fetchStoreData();
+    else processStoreData();
+    updateSortIcon(ratingHeader, storeSortDir);
 });
 
 keywordsTab.addEventListener('click', () => {
@@ -365,6 +509,8 @@ keywordsTab.addEventListener('click', () => {
     storesView.classList.add('hidden');
     keywordCurrentPage = 1;
     if (keywordData.length === 0) fetchKeywordData();
+    else processKeywordData();
+    updateSortIcon(keywordDateHeader, keywordSortDir);
 });
 
 // 初始化时自动加载数据

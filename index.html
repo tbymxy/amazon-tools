@@ -21,6 +21,7 @@
     <div id="main-container" class="hidden">
         <header class="app-header">
             <div class="header-left">
+                <span class="app-title">Amazon 数据</span>
                 <div class="tabs">
                     <button id="stores-tab" class="active tab-btn">店铺数据</button>
                     <button id="keywords-tab" class="tab-btn">关键词数据</button>
@@ -32,17 +33,27 @@
         </header>
 
         <div class="main-content">
-            <div id="loading-spinner" class="spinner-container hidden">
-                <div class="spinner"></div>
+            <div id="loading-skeleton" class="card">
+                <div style="height: 30px; width: 250px; margin-bottom: 20px;" class="skeleton-loader"></div>
+                <div style="height: 36px; width: 100%; margin-bottom: 20px;" class="skeleton-loader"></div>
+                <div class="table-wrapper">
+                    <div style="height: 40px; background-color: #e0e0e0;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                </div>
             </div>
 
-            <div id="stores-view" class="view-container card">
+            <div id="stores-view" class="view-container card hidden">
                 <div class="card-header">
                     <h2>店铺数据</h2>
                     <span class="stats-bar">
                         总计: <span id="store-count">0</span>
                     </span>
                 </div>
+                <div id="store-filters" class="site-filters"></div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -51,7 +62,7 @@
                                 <th>站点</th>
                                 <th>店铺名</th>
                                 <th>Feedback</th>
-                                <th id="rating-header">Rating <span class="sort-icon">&#x25BC;</span></th>
+                                <th id="rating-header" data-sort-key="rating">Rating <span class="sort-icon" data-sort-dir="desc"></span></th>
                                 <th>Reviews</th>
                                 <th>Featured</th>
                                 <th>操作</th>
@@ -72,6 +83,7 @@
                         总计: <span id="keyword-count">0</span>
                     </span>
                 </div>
+                <div id="keyword-filters" class="site-filters"></div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -80,7 +92,7 @@
                                 <th>站点</th>
                                 <th>关键词</th>
                                 <th>中文关键词</th> <th>结果数</th>
-                                <th id="keyword-date-header">采集日期 <span class="sort-icon">&#x25BC;</span></th>
+                                <th id="keyword-date-header" data-sort-key="date">采集日期 <span class="sort-icon" data-sort-dir="desc"></span></th>
                                 <th>操作</th>
                             </tr>
                         </thead>

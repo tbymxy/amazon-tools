@@ -37,7 +37,6 @@ const storeCountSpan = document.getElementById('store-count');
 const keywordCountSpan = document.getElementById('keyword-count');
 const storePaginationDiv = document.getElementById('store-pagination');
 const keywordPaginationDiv = document.getElementById('keyword-pagination');
-const updateAllStoresBtn = document.getElementById('update-all-stores-btn');
 
 // 分页和排序状态
 let storeData = [];
@@ -80,7 +79,7 @@ loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-
+    
     try {
         await auth.signInWithEmailAndPassword(email, password);
         authError.textContent = '';
@@ -155,7 +154,7 @@ function sortStoreData() {
     storeData.sort((a, b) => {
         let valA = a[storeSortKey];
         let valB = b[storeSortKey];
-
+        
         if (storeSortKey === 'rating') {
             valA = parseFloat(valA) || 0;
             valB = parseFloat(valB) || 0;
@@ -163,7 +162,7 @@ function sortStoreData() {
             valA = a.createdAt ? new Date(a.createdAt) : new Date(0);
             valB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         }
-
+        
         if (valA < valB) return storeSortDir === 'asc' ? -1 : 1;
         if (valA > valB) return storeSortDir === 'asc' ? 1 : -1;
         return 0;
@@ -178,7 +177,7 @@ function sortKeywordData() {
             valA = a.date ? new Date(a.date) : new Date(0);
             valB = b.date ? new Date(b.date) : new Date(0);
         }
-
+        
         if (valA < valB) return keywordSortDir === 'asc' ? -1 : 1;
         if (valA > valB) return keywordSortDir === 'asc' ? 1 : -1;
         return 0;
@@ -220,10 +219,10 @@ function renderStoreTable() {
         
         let storeUrl = '#';
         let sellerNameLink = item.sellerName || 'N/A';
-
+        
         if (item.sellerId && item.site) {
-            const domain = item.site.replace('amazon.', '');
-            storeUrl = `https://www.amazon.${domain}/sp?ie=UTF8&seller=${item.sellerId}`;
+            const domain = item.site;
+            storeUrl = `https://www.${domain}/sp?ie=UTF8&seller=${item.sellerId}`;
             sellerNameLink = `<a href="${storeUrl}" target="_blank">${item.sellerName || 'N/A'}</a>`;
         }
 
@@ -234,9 +233,8 @@ function renderStoreTable() {
             <td data-tooltip="${item.feedback || 'N/A'}">${cleanFeedback(item.feedback)}</td>
             <td data-tooltip="${item.rating || 'N/A'}">${cleanNumberWithDot(item.rating)}</td>
             <td data-tooltip="${item.reviews || 'N/A'}">${cleanNumberWithDot(item.reviews)}</td>
-            <td data-tooltip="${item.recommendCount || 'N/A'}">${cleanFeaturedCount(item.recommendCount)}</td>
+            <td data-tooltip="${item.featuredCount || 'N/A'}">${cleanFeaturedCount(item.featuredCount)}</td>
             <td>
-                <button class="btn secondary-btn" onclick="updateStore('${item.id}', '${item.site}', '${item.sellerId}')">更新</button>
                 <button class="btn secondary-btn" onclick="deleteStore('${item.id}')">删除</button>
             </td>
         `;
@@ -347,89 +345,6 @@ window.deleteKeyword = async (id) => {
             console.error("删除失败: ", error);
             alert('删除失败，请检查控制台。');
         }
-    }
-}
-
-// 新增：一键更新所有店铺数据
-updateAllStoresBtn.addEventListener('click', async () => {
-    if (!confirm('确定要更新所有店铺数据吗？该操作可能需要较长时间。')) {
-        return;
-    }
-
-    // 禁用按钮以防重复点击
-    updateAllStoresBtn.disabled = true;
-    updateAllStoresBtn.textContent = '更新中...';
-
-    const storesToUpdate = storeData.map(store => ({
-        id: store.id,
-        site: store.site,
-        sellerId: store.sellerId
-    }));
-
-    try {
-        for (const store of storesToUpdate) {
-            await updateStoreDataViaProxy(store.id, store.site, store.sellerId);
-        }
-        alert('所有店铺数据已更新完毕！');
-    } catch (error) {
-        console.error("批量更新失败: ", error);
-        alert('批量更新过程中发生错误，请检查控制台。');
-    } finally {
-        updateAllStoresBtn.disabled = false;
-        updateAllStoresBtn.textContent = '一键更新全部店铺';
-        fetchStoreData(); // 重新加载数据以刷新表格
-    }
-});
-
-// 新增：单独更新店铺数据
-window.updateStore = async (id, site, sellerId) => {
-    if (confirm('确定要更新这条店铺数据吗？')) {
-        const btn = event.target;
-        btn.disabled = true;
-        btn.textContent = '更新中...';
-        
-        try {
-            await updateStoreDataViaProxy(id, site, sellerId);
-            alert('店铺数据已更新！');
-        } catch (error) {
-            alert('更新失败，请检查控制台。');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '更新';
-            fetchStoreData();
-        }
-    }
-};
-
-// 新增：通过本地代理服务器更新数据
-async function updateStoreDataViaProxy(id, site, sellerId) {
-    if (!id || !site || !sellerId) {
-        throw new Error("无法更新：ID, 站点或SellerID缺失");
-    }
-
-    try {
-        const response = await fetch('http://localhost:3000/updateStore', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ id, site, sellerId }),
-        });
-        
-        if (!response.ok) {
-            throw new Error(`代理服务器请求失败：${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error || '未知错误');
-        }
-
-        // 代理服务器已直接更新Firestore，前端无需再次操作
-        return result.data;
-    } catch (error) {
-        console.error(`更新店铺 ${id} 失败: `, error);
-        throw error;
     }
 }
 

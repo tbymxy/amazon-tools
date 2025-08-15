@@ -452,19 +452,19 @@ function renderKeywordTable() {
         
         const keywordUrl = item.url || '#';
         const date = item.date || 'N/A';
+        const hasUrl = keywordUrl !== '#';
 
-        let keywordLink = item.keyword || 'N/A';
-        if (keywordUrl !== '#') {
-            keywordLink = `<a href="${keywordUrl}" target="_blank">${item.keyword}</a>`;
-        }
-        
+        const keywordLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.keyword || 'N/A'}</a>` : (item.keyword || 'N/A');
+        const keywordZhLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.keywordZh || 'N/A'}</a>` : (item.keywordZh || 'N/A');
+        const countLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.count || 'N/A'}</a>` : (item.count || 'N/A');
+
         tr.innerHTML = `
             <td><input type="checkbox" class="keyword-checkbox" data-id="${item.id}" ${isSelected ? 'checked' : ''}></td>
             <td>${index + 1}</td>
             <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
             <td data-tooltip="${item.keyword || 'N/A'}">${keywordLink}</td>
-            <td data-tooltip="${item.keywordZh || 'N/A'}">${item.keywordZh || 'N/A'}</td>
-            <td data-tooltip="${item.count || 'N/A'}">${item.count || 'N/A'}</td>
+            <td data-tooltip="${item.keywordZh || 'N/A'}">${keywordZhLink}</td>
+            <td data-tooltip="${item.count || 'N/A'}">${countLink}</td>
             <td data-tooltip="${date}">${date}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteKeyword('${item.id}')">删除</button>

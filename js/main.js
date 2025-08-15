@@ -35,24 +35,36 @@ const keywordTableBody = document.getElementById('keyword-table-body');
 const keywordNoData = document.getElementById('keywords-no-data');
 const storeCountSpan = document.getElementById('store-count');
 const keywordCountSpan = document.getElementById('keyword-count');
-const storePaginationDiv = document.getElementById('store-pagination');
-const keywordPaginationDiv = document.getElementById('keyword-pagination');
 const ratingHeader = document.getElementById('rating-header');
 const keywordDateHeader = document.getElementById('keyword-date-header');
 const storeFiltersDiv = document.getElementById('store-filters');
 const keywordFiltersDiv = document.getElementById('keyword-filters');
 
+const storeSearchInput = document.getElementById('store-search-input');
+const keywordSearchInput = document.getElementById('keyword-search-input');
 
-// 分页、排序和筛选状态
+const storeImportBtn = document.getElementById('store-import-btn');
+const storeImportFile = document.getElementById('store-import-file');
+const storeExportBtn = document.getElementById('store-export-btn');
+const storeSelectAll = document.getElementById('store-select-all');
+const storeDeleteSelectedBtn = document.getElementById('store-delete-selected-btn');
+const storeDownloadTemplateBtn = document.getElementById('store-download-template-btn');
+
+const keywordImportBtn = document.getElementById('keyword-import-btn');
+const keywordImportFile = document.getElementById('keyword-import-file');
+const keywordExportBtn = document.getElementById('keyword-export-btn');
+const keywordSelectAll = document.getElementById('keyword-select-all');
+const keywordDeleteSelectedBtn = document.getElementById('keyword-delete-selected-btn');
+const keywordDownloadTemplateBtn = document.getElementById('keyword-download-template-btn');
+
+
+// 原始数据和过滤数据
 let storeData = [];
 let keywordData = [];
 let filteredStoreData = [];
 let filteredKeywordData = [];
 
-let storeCurrentPage = 1;
-let keywordCurrentPage = 1;
-const itemsPerPage = 20;
-
+// 排序和筛选状态
 let storeSortKey = 'rating';
 let storeSortDir = 'desc';
 let keywordSortKey = 'date';
@@ -60,6 +72,10 @@ let keywordSortDir = 'desc';
 
 let activeStoreSiteFilter = 'all';
 let activeKeywordSiteFilter = 'all';
+
+// 多选状态
+let selectedStoreIds = [];
+let selectedKeywordIds = [];
 
 // 亚马逊站点域名与缩写映射
 const SITE_MAP = {
@@ -91,31 +107,6 @@ const SITE_MAP = {
 // 根据域名获取站点缩写
 function getSiteAbbreviation(domain) {
     return SITE_MAP[domain] || domain;
-}
-
-// --- 数据清洗函数 ---
-function cleanFeedback(feedback) {
-    if (!feedback) return 'N/A';
-    const match = String(feedback).match(/(\d{1,3})\s*[％%]/);
-    return match ? `${match[1]}%` : 'N/A';
-}
-function cleanFeaturedCount(text) {
-    if (!text) return 'N/A';
-    let match = String(text).match(/(\d+[,]?\d*)\s*以上結果.*$/);
-    if (match) return match[1].replace(/,/g, '');
-    match = String(text).match(/mehr als ([\d\.]+)(?: Ergebnissen)?/i);
-    if (match) return match[1].replace(/\./g, '');
-    match = String(text).match(/(?:共|over|超過|of over)\s*([\d,\.]+)\s*(?:個|results)?/i);
-    if (match) return match[1].replace(/[\.,]/g, '');
-    match = String(text).match(/of\s*([\d,\.]+)\s*results/i);
-    if (match) return match[1].replace(/[\.,]/g, '');
-    match = String(text).match(/([\d,\.]+)(?=\D*$)/);
-    if (match) return match[1].replace(/[\.,]/g, '');
-    return 'N/A';
-}
-function cleanNumberWithDot(text) {
-    if (!text) return 'N/A';
-    return String(text).replace(/(\d),(\d)/g, '$1.$2');
 }
 
 // --- 认证功能 ---
@@ -205,9 +196,12 @@ function processKeywordData() {
 
 // --- 筛选和排序功能 ---
 function filterAndSortStoreData() {
+    const searchTerm = storeSearchInput.value.toLowerCase();
+    
     filteredStoreData = storeData.filter(item => {
-        if (activeStoreSiteFilter === 'all') return true;
-        return getSiteAbbreviation(item.site) === activeStoreSiteFilter;
+        const siteMatch = activeStoreSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeStoreSiteFilter;
+        const searchMatch = !searchTerm || (item.sellerName && item.sellerName.toLowerCase().includes(searchTerm));
+        return siteMatch && searchMatch;
     });
 
     filteredStoreData.sort((a, b) => {
@@ -229,9 +223,12 @@ function filterAndSortStoreData() {
 }
 
 function filterAndSortKeywordData() {
+    const searchTerm = keywordSearchInput.value.toLowerCase();
+    
     filteredKeywordData = keywordData.filter(item => {
-        if (activeKeywordSiteFilter === 'all') return true;
-        return getSiteAbbreviation(item.site) === activeKeywordSiteFilter;
+        const siteMatch = activeKeywordSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeKeywordSiteFilter;
+        const searchMatch = !searchTerm || (item.keyword && item.keyword.toLowerCase().includes(searchTerm)) || (item.keywordZh && item.keywordZh.toLowerCase().includes(searchTerm));
+        return siteMatch && searchMatch;
     });
 
     filteredKeywordData.sort((a, b) => {
@@ -248,6 +245,17 @@ function filterAndSortKeywordData() {
     });
 }
 
+// 绑定搜索事件
+storeSearchInput.addEventListener('input', () => {
+    filterAndSortStoreData();
+    renderStoreTable();
+});
+
+keywordSearchInput.addEventListener('input', () => {
+    filterAndSortKeywordData();
+    renderKeywordTable();
+});
+
 // 渲染站点筛选按钮
 function renderSiteFilters(container, data, type) {
     container.innerHTML = '';
@@ -263,12 +271,10 @@ function renderSiteFilters(container, data, type) {
     allBtn.addEventListener('click', () => {
         if (type === 'store') {
             activeStoreSiteFilter = 'all';
-            storeCurrentPage = 1;
             filterAndSortStoreData();
             renderStoreTable();
         } else {
             activeKeywordSiteFilter = 'all';
-            keywordCurrentPage = 1;
             filterAndSortKeywordData();
             renderKeywordTable();
         }
@@ -286,12 +292,10 @@ function renderSiteFilters(container, data, type) {
         btn.addEventListener('click', () => {
             if (type === 'store') {
                 activeStoreSiteFilter = site;
-                storeCurrentPage = 1;
                 filterAndSortStoreData();
                 renderStoreTable();
             } else {
                 activeKeywordSiteFilter = site;
-                keywordCurrentPage = 1;
                 filterAndSortKeywordData();
                 renderKeywordTable();
             }
@@ -307,10 +311,8 @@ function updateFilterButtonState(container, activeSite) {
     });
     
     if (activeSite === 'all') {
-        // 使用精确的文本匹配来确保找到"全部站点"按钮
         container.querySelector('button').classList.add('active');
     } else {
-        container.querySelector(`button`).classList.add('active');
         const activeBtn = Array.from(container.querySelectorAll('button')).find(btn => btn.textContent === activeSite);
         if (activeBtn) activeBtn.classList.add('active');
     }
@@ -346,18 +348,24 @@ function renderStoreTable() {
     storeTableBody.innerHTML = '';
     storeNoData.classList.add('hidden');
     storeCountSpan.textContent = filteredStoreData.length;
+    storeDeleteSelectedBtn.disabled = selectedStoreIds.length === 0;
 
     if (filteredStoreData.length === 0) {
         storeNoData.classList.remove('hidden');
+        storeSelectAll.disabled = true;
+        storeSelectAll.checked = false;
         return;
+    } else {
+        storeSelectAll.disabled = false;
     }
-
-    const totalPages = Math.ceil(filteredStoreData.length / itemsPerPage);
-    const startIndex = (storeCurrentPage - 1) * itemsPerPage;
-    const paginatedData = filteredStoreData.slice(startIndex, startIndex + itemsPerPage);
-
-    paginatedData.forEach((item, index) => {
+    
+    filteredStoreData.forEach((item, index) => {
+        const isSelected = selectedStoreIds.includes(item.id);
         const tr = document.createElement('tr');
+        if (isSelected) {
+            tr.classList.add('selected');
+        }
+        tr.dataset.id = item.id;
         
         let storeUrl = '#';
         let sellerNameLink = item.sellerName || 'N/A';
@@ -368,14 +376,17 @@ function renderStoreTable() {
             sellerNameLink = `<a href="${storeUrl}" target="_blank">${item.sellerName || 'N/A'}</a>`;
         }
 
+
         tr.innerHTML = `
-            <td>${startIndex + index + 1}</td>
+            <td><input type="checkbox" class="store-checkbox" data-id="${item.id}" ${isSelected ? 'checked' : ''}></td>
+            <td>${index + 1}</td>
             <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
             <td data-tooltip="${item.sellerName || 'N/A'}">${sellerNameLink}</td>
-            <td data-tooltip="${item.feedback || 'N/A'}">${cleanFeedback(item.feedback)}</td>
-            <td data-tooltip="${item.rating || 'N/A'}">${cleanNumberWithDot(item.rating)}</td>
-            <td data-tooltip="${item.reviews || 'N/A'}">${cleanNumberWithDot(item.reviews)}</td>
-            <td data-tooltip="${item.featuredCount || 'N/A'}">${cleanFeaturedCount(item.featuredCount)}</td>
+            <td data-tooltip="${item.feedback || 'N/A'}">${item.feedback || 'N/A'}</td>
+            <td data-tooltip="${item.rating || 'N/A'}">${item.rating || 'N/A'}</td>
+            <td data-tooltip="${item.reviews || 'N/A'}">${item.reviews || 'N/A'}</td>
+            <td data-tooltip="${item.Featured || 'N/A'}">${item.Featured || 'N/A'}</td>
+            <td data-tooltip="${item.NewestArrivals || 'N/A'}">${item.NewestArrivals || 'N/A'}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteStore('${item.id}')">删除</button>
             </td>
@@ -383,42 +394,79 @@ function renderStoreTable() {
         storeTableBody.appendChild(tr);
     });
 
-    renderPagination(storePaginationDiv, totalPages, storeCurrentPage, (page) => {
-        storeCurrentPage = page;
-        renderStoreTable();
+    storeTableBody.querySelectorAll('tr').forEach(row => {
+        const checkbox = row.querySelector('.store-checkbox');
+        row.addEventListener('click', (e) => {
+            // 如果点击的是删除按钮，则不切换选中状态
+            if (e.target.tagName.toLowerCase() === 'button') {
+                return;
+            }
+            // 切换复选框状态
+            checkbox.checked = !checkbox.checked;
+            // 触发复选框的change事件
+            checkbox.dispatchEvent(new Event('change'));
+        });
     });
+
+    storeTableBody.querySelectorAll('.store-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            const row = e.target.closest('tr');
+            if (e.target.checked) {
+                if (!selectedStoreIds.includes(id)) {
+                    selectedStoreIds.push(id);
+                }
+                row.classList.add('selected');
+            } else {
+                selectedStoreIds = selectedStoreIds.filter(itemId => itemId !== id);
+                row.classList.remove('selected');
+            }
+            storeDeleteSelectedBtn.disabled = selectedStoreIds.length === 0;
+            storeSelectAll.checked = selectedStoreIds.length === filteredStoreData.length;
+        });
+    });
+    
+    storeSelectAll.checked = selectedStoreIds.length > 0 && selectedStoreIds.length === filteredStoreData.length;
 }
 
 function renderKeywordTable() {
     keywordTableBody.innerHTML = '';
     keywordNoData.classList.add('hidden');
     keywordCountSpan.textContent = filteredKeywordData.length;
+    keywordDeleteSelectedBtn.disabled = selectedKeywordIds.length === 0;
 
     if (filteredKeywordData.length === 0) {
         keywordNoData.classList.remove('hidden');
+        keywordSelectAll.disabled = true;
+        keywordSelectAll.checked = false;
         return;
+    } else {
+        keywordSelectAll.disabled = false;
     }
-
-    const totalPages = Math.ceil(filteredKeywordData.length / itemsPerPage);
-    const startIndex = (keywordCurrentPage - 1) * itemsPerPage;
-    const paginatedData = filteredKeywordData.slice(startIndex, startIndex + itemsPerPage);
-
-    paginatedData.forEach((item, index) => {
+    
+    filteredKeywordData.forEach((item, index) => {
+        const isSelected = selectedKeywordIds.includes(item.id);
         const tr = document.createElement('tr');
+        if (isSelected) {
+            tr.classList.add('selected');
+        }
+        tr.dataset.id = item.id;
+        
         const keywordUrl = item.url || '#';
         const date = item.date || 'N/A';
-        
+
         let keywordLink = item.keyword || 'N/A';
         if (keywordUrl !== '#') {
             keywordLink = `<a href="${keywordUrl}" target="_blank">${item.keyword}</a>`;
         }
-
+        
         tr.innerHTML = `
-            <td>${startIndex + index + 1}</td>
+            <td><input type="checkbox" class="keyword-checkbox" data-id="${item.id}" ${isSelected ? 'checked' : ''}></td>
+            <td>${index + 1}</td>
             <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
             <td data-tooltip="${item.keyword || 'N/A'}">${keywordLink}</td>
             <td data-tooltip="${item.keywordZh || 'N/A'}">${item.keywordZh || 'N/A'}</td>
-            <td data-tooltip="${item.count || 'N/A'}">${cleanFeaturedCount(item.count)}</td>
+            <td data-tooltip="${item.count || 'N/A'}">${item.count || 'N/A'}</td>
             <td data-tooltip="${date}">${date}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteKeyword('${item.id}')">删除</button>
@@ -427,41 +475,249 @@ function renderKeywordTable() {
         keywordTableBody.appendChild(tr);
     });
 
-    renderPagination(keywordPaginationDiv, totalPages, keywordCurrentPage, (page) => {
-        keywordCurrentPage = page;
-        renderKeywordTable();
+    keywordTableBody.querySelectorAll('tr').forEach(row => {
+        const checkbox = row.querySelector('.keyword-checkbox');
+        row.addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() === 'button') {
+                return;
+            }
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
     });
+
+    keywordTableBody.querySelectorAll('.keyword-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            const row = e.target.closest('tr');
+            if (e.target.checked) {
+                if (!selectedKeywordIds.includes(id)) {
+                    selectedKeywordIds.push(id);
+                }
+                row.classList.add('selected');
+            } else {
+                selectedKeywordIds = selectedKeywordIds.filter(itemId => itemId !== id);
+                row.classList.remove('selected');
+            }
+            keywordDeleteSelectedBtn.disabled = selectedKeywordIds.length === 0;
+            keywordSelectAll.checked = selectedKeywordIds.length === filteredKeywordData.length;
+        });
+    });
+    
+    keywordSelectAll.checked = selectedKeywordIds.length > 0 && selectedKeywordIds.length === filteredKeywordData.length;
 }
 
-function renderPagination(container, totalPages, currentPage, onClick) {
-    container.innerHTML = '';
-    if (totalPages <= 1) return;
+// --- 导入导出功能 ---
+function exportToCsv(data, filename) {
+    if (data.length === 0) {
+        alert('没有数据可供导出！');
+        return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    const csvRows = [];
+    csvRows.push(headers.join(','));
 
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = '上一页';
-    prevBtn.classList.add('btn');
-    prevBtn.disabled = currentPage === 1;
-    prevBtn.addEventListener('click', () => onClick(currentPage - 1));
-    container.appendChild(prevBtn);
-
-    for (let i = 1; i <= totalPages; i++) {
-        const pageBtn = document.createElement('button');
-        pageBtn.textContent = i;
-        pageBtn.classList.add('btn');
-        if (i === currentPage) {
-            pageBtn.classList.add('active');
-        }
-        pageBtn.addEventListener('click', () => onClick(i));
-        container.appendChild(pageBtn);
+    for (const item of data) {
+        const values = headers.map(header => {
+            const value = item[header] || '';
+            // Escape special characters in CSV
+            const escaped = ('' + value).replace(/"/g, '""');
+            return `"${escaped}"`;
+        });
+        csvRows.push(values.join(','));
     }
 
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = '下一页';
-    nextBtn.classList.add('btn');
-    nextBtn.disabled = currentPage === totalPages;
-    nextBtn.addEventListener('click', () => onClick(currentPage + 1));
-    container.appendChild(nextBtn);
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
+
+// 模板文件下载函数
+const storeTemplateHeaders = ['site', 'sellerId', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals', 'url'];
+const keywordTemplateHeaders = ['site', 'keyword', 'keywordZh', 'count', 'date', 'url'];
+
+function downloadTemplate(headers, filename) {
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    csvRows.push(headers.map(() => '').join(',')); // Add an empty line for the template
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+function handleImport(file, collectionName) {
+    if (!file) {
+        alert('请选择一个文件！');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
+            const dataToImport = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
+                if (values.length !== headers.length) {
+                    console.warn(`Skipping malformed row: ${lines[i]}`);
+                    continue;
+                }
+                const record = {};
+                headers.forEach((header, index) => {
+                    record[header] = values[index];
+                });
+                dataToImport.push(record);
+            }
+
+            if (dataToImport.length > 0) {
+                await importDataToFirestore(dataToImport, collectionName);
+                alert('数据导入成功！');
+                if (collectionName === 'amazonStores') {
+                    fetchStoreData();
+                } else {
+                    fetchKeywordData();
+                }
+            } else {
+                alert('文件内容为空或格式不正确。');
+            }
+        } catch (error) {
+            console.error("导入文件失败: ", error);
+            alert('文件解析失败，请确保格式正确。');
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function importDataToFirestore(data, collectionName) {
+    const batch = db.batch();
+    const collectionRef = db.collection(collectionName);
+    const uniqueRecords = new Map();
+
+    // Find a suitable unique identifier. Assuming `sellerName` for stores and `keyword` for keywords.
+    const uniqueKey = collectionName === 'amazonStores' ? 'sellerName' : 'keyword';
+
+    for (const record of data) {
+        if (record[uniqueKey]) {
+            uniqueRecords.set(record[uniqueKey], record);
+        }
+    }
+
+    const uniqueRecordsArray = Array.from(uniqueRecords.values());
+    const existingDocs = await collectionRef.where(uniqueKey, 'in', Array.from(uniqueRecords.keys())).get();
+
+    const existingDocsMap = new Map();
+    existingDocs.forEach(doc => {
+        existingDocsMap.set(doc.data()[uniqueKey], doc.id);
+    });
+
+    for (const record of uniqueRecordsArray) {
+        const existingDocId = existingDocsMap.get(record[uniqueKey]);
+        if (existingDocId) {
+            batch.update(collectionRef.doc(existingDocId), record);
+        } else {
+            batch.set(collectionRef.doc(), record);
+        }
+    }
+    
+    await batch.commit();
+}
+
+
+storeExportBtn.addEventListener('click', () => {
+    exportToCsv(filteredStoreData, 'amazon_stores.csv');
+});
+
+storeImportBtn.addEventListener('click', () => {
+    storeImportFile.click();
+});
+
+storeImportFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleImport(file, 'amazonStores');
+});
+
+storeDownloadTemplateBtn.addEventListener('click', () => {
+    downloadTemplate(storeTemplateHeaders, 'amazon_stores_template.csv');
+});
+
+keywordExportBtn.addEventListener('click', () => {
+    exportToCsv(filteredKeywordData, 'amazon_keywords.csv');
+});
+
+keywordImportBtn.addEventListener('click', () => {
+    keywordImportFile.click();
+});
+
+keywordImportFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleImport(file, 'amazonKeywords');
+});
+
+keywordDownloadTemplateBtn.addEventListener('click', () => {
+    downloadTemplate(keywordTemplateHeaders, 'amazon_keywords_template.csv');
+});
+
+storeDeleteSelectedBtn.addEventListener('click', deleteSelectedStores);
+keywordDeleteSelectedBtn.addEventListener('click', deleteSelectedKeywords);
+
+
+// 全选/取消全选功能
+storeSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'store'));
+keywordSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'keyword'));
+
+function toggleSelectAll(isChecked, type) {
+    const checkboxes = document.querySelectorAll(`.${type}-checkbox`);
+    const deleteBtn = type === 'store' ? storeDeleteSelectedBtn : keywordDeleteSelectedBtn;
+    const tableBody = type === 'store' ? storeTableBody : keywordTableBody;
+
+    if (isChecked) {
+        if (type === 'store') {
+            selectedStoreIds = filteredStoreData.map(item => item.id);
+        } else {
+            selectedKeywordIds = filteredKeywordData.map(item => item.id);
+        }
+    } else {
+        if (type === 'store') {
+            selectedStoreIds = [];
+        } else {
+            selectedKeywordIds = [];
+        }
+    }
+    
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        const row = cb.closest('tr');
+        if (row) {
+            if (isChecked) {
+                row.classList.add('selected');
+            } else {
+                row.classList.remove('selected');
+            }
+        }
+    });
+
+    deleteBtn.disabled = selectedStoreIds.length === 0 && selectedKeywordIds.length === 0;
+}
+
 
 // --- 操作功能 ---
 window.deleteStore = async (id) => {
@@ -490,13 +746,52 @@ window.deleteKeyword = async (id) => {
     }
 }
 
+async function deleteSelectedStores() {
+    if (selectedStoreIds.length === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedStoreIds.length} 条店铺数据吗？`)) {
+        try {
+            const batch = db.batch();
+            selectedStoreIds.forEach(id => {
+                const docRef = db.collection('amazonStores').doc(id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            selectedStoreIds = [];
+            fetchStoreData();
+            alert('批量删除成功！');
+        } catch (error) {
+            console.error("批量删除失败: ", error);
+            alert('批量删除失败，请检查控制台。');
+        }
+    }
+}
+
+async function deleteSelectedKeywords() {
+    if (selectedKeywordIds.length === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedKeywordIds.length} 条关键词数据吗？`)) {
+        try {
+            const batch = db.batch();
+            selectedKeywordIds.forEach(id => {
+                const docRef = db.collection('amazonKeywords').doc(id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            selectedKeywordIds = [];
+            fetchKeywordData();
+            alert('批量删除成功！');
+        } catch (error) {
+            console.error("批量删除失败: ", error);
+            alert('批量删除失败，请检查控制台。');
+        }
+    }
+}
+
 // --- 页面切换功能 ---
 storesTab.addEventListener('click', () => {
     storesTab.classList.add('active');
     keywordsTab.classList.remove('active');
     storesView.classList.remove('hidden');
     keywordsView.classList.add('hidden');
-    storeCurrentPage = 1;
     if (storeData.length === 0) fetchStoreData();
     else processStoreData();
     updateSortIcon(ratingHeader, storeSortDir);
@@ -507,7 +802,6 @@ keywordsTab.addEventListener('click', () => {
     storesTab.classList.remove('active');
     keywordsView.classList.remove('hidden');
     storesView.classList.add('hidden');
-    keywordCurrentPage = 1;
     if (keywordData.length === 0) fetchKeywordData();
     else processKeywordData();
     updateSortIcon(keywordDateHeader, keywordSortDir);

@@ -29,6 +29,9 @@ body {
 .hidden {
     display: none !important;
 }
+.hidden-file-input {
+    display: none;
+}
 
 .auth-card {
     max-width: 400px;
@@ -70,6 +73,12 @@ body {
     transition: all 0.2s ease-in-out;
     border: 1px solid transparent;
     user-select: none;
+}
+.btn:disabled {
+    background-color: #e0e0e0;
+    color: #a0a0a0;
+    cursor: not-allowed;
+    border-color: #cccccc;
 }
 
 .primary-btn {
@@ -179,11 +188,21 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 16px;
 }
-
+.header-left-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 .card-header h2 {
     margin: 0;
     font-size: 24px;
@@ -192,6 +211,14 @@ body {
 .stats-bar {
     font-size: 14px;
     color: var(--text-secondary);
+}
+
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    width: 250px;
 }
 
 /* Site Filters */
@@ -265,16 +292,24 @@ body {
 .data-table tbody tr:hover {
     background-color: var(--hover-bg);
 }
+.data-table tbody tr.selected {
+    background-color: #fff5e8; /* 选中后的颜色 */
+}
+.data-table tbody tr.selected:hover {
+    background-color: #ffe8cc; /* 选中后 hover 的颜色 */
+}
 
 /* Column widths */
-.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 50px; } /* 序号 */
-.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 80px; } /* 站点 */
-.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 18%; }  /* 店铺名/关键词 */
-.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 12%; }  /* Feedback/中文关键词 */
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 10%; }  /* Rating/结果数 */
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 12%; }  /* Reviews/采集日期 */
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 10%; }  /* Featured/操作 */
-.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 100px; } /* 操作 */
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 50px; } 
+.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 50px; }
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 80px; } 
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 15%; }  
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 10%; }  
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 8%; }  
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 10%; }  
+.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 8%; }  
+.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 12%; } 
+.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 100px; } 
 
 
 .data-table th .sort-icon {
@@ -299,39 +334,6 @@ body {
 .data-table .btn {
     padding: 6px 12px;
     font-size: 14px;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 24px;
-}
-
-.pagination button {
-    padding: 8px 16px;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
-    background-color: var(--card-bg);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.pagination button:hover {
-    background-color: var(--hover-bg);
-}
-.pagination button.active {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: #fff;
-    font-weight: 600;
-}
-.pagination button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-.pagination button:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
 }
 
 .no-data {
@@ -410,8 +412,17 @@ body {
     .card-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 12px;
     }
     .card-header h2 {
         font-size: 20px;
+    }
+    .header-left-actions, .header-right-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    .search-input {
+        width: 100%;
     }
 }

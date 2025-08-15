@@ -48,16 +48,27 @@
 
             <div id="stores-view" class="view-container card hidden">
                 <div class="card-header">
-                    <h2>店铺数据</h2>
-                    <span class="stats-bar">
-                        总计: <span id="store-count">0</span>
-                    </span>
+                    <div class="header-left-actions">
+                        <h2>店铺数据</h2>
+                        <span class="stats-bar">
+                            总计: <span id="store-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="store-search-input" class="search-input" placeholder="搜索店铺名...">
+                        <input type="file" id="store-import-file" class="hidden-file-input" accept=".csv, .json">
+                        <button id="store-import-btn" class="btn secondary-btn">导入</button>
+                        <button id="store-download-template-btn" class="btn secondary-btn">下载模板</button>
+                        <button id="store-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="store-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
                 </div>
                 <div id="store-filters" class="site-filters"></div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="store-select-all"></th>
                                 <th>序号</th>
                                 <th>站点</th>
                                 <th>店铺名</th>
@@ -65,6 +76,7 @@
                                 <th id="rating-header" data-sort-key="rating">Rating <span class="sort-icon" data-sort-dir="desc"></span></th>
                                 <th>Reviews</th>
                                 <th>Featured</th>
+                                <th>NewestArrivals</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -73,21 +85,31 @@
                     </table>
                     <p id="stores-no-data" class="no-data hidden">暂无数据</p>
                 </div>
-                <div id="store-pagination" class="pagination"></div>
             </div>
 
             <div id="keywords-view" class="view-container card hidden">
                 <div class="card-header">
-                    <h2>关键词数据</h2>
-                    <span class="stats-bar">
-                        总计: <span id="keyword-count">0</span>
-                    </span>
+                    <div class="header-left-actions">
+                        <h2>关键词数据</h2>
+                        <span class="stats-bar">
+                            总计: <span id="keyword-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="keyword-search-input" class="search-input" placeholder="搜索关键词...">
+                        <input type="file" id="keyword-import-file" class="hidden-file-input" accept=".csv, .json">
+                        <button id="keyword-import-btn" class="btn secondary-btn">导入</button>
+                        <button id="keyword-download-template-btn" class="btn secondary-btn">下载模板</button>
+                        <button id="keyword-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="keyword-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
                 </div>
                 <div id="keyword-filters" class="site-filters"></div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="keyword-select-all"></th>
                                 <th>序号</th>
                                 <th>站点</th>
                                 <th>关键词</th>
@@ -101,7 +123,6 @@
                     </table>
                     <p id="keywords-no-data" class="no-data hidden">暂无数据</p>
                 </div>
-                <div id="keyword-pagination" class="pagination"></div>
             </div>
         </div>
     </div>

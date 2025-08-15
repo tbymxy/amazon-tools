@@ -132,8 +132,8 @@ auth.onAuthStateChanged((user) => {
         authContainer.classList.add('hidden');
         mainContainer.classList.remove('hidden');
         showLoading();
-        fetchStoreData();
-        fetchKeywordData();
+        // 自动启动实时监听
+        startRealtimeListeners();
     } else {
         authContainer.classList.remove('hidden');
         mainContainer.classList.add('hidden');
@@ -155,31 +155,29 @@ function hideLoading() {
     }
 }
 
-// --- 数据获取功能 ---
-async function fetchStoreData() {
-    try {
-        const snapshot = await db.collection('amazonStores').get();
+// --- 实时监听器功能 ---
+function startRealtimeListeners() {
+    // 店铺数据监听
+    db.collection('amazonStores').onSnapshot(snapshot => {
         storeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         processStoreData();
-    } catch (error) {
+        hideLoading();
+    }, error => {
         console.error("获取店铺数据失败: ", error);
         alert("获取店铺数据失败，请检查控制台");
-    } finally {
         hideLoading();
-    }
-}
+    });
 
-async function fetchKeywordData() {
-    try {
-        const snapshot = await db.collection('amazonKeywords').get();
+    // 关键词数据监听
+    db.collection('amazonKeywords').onSnapshot(snapshot => {
         keywordData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         processKeywordData();
-    } catch (error) {
+        hideLoading();
+    }, error => {
         console.error("获取关键词数据失败: ", error);
         alert("获取关键词数据失败，请检查控制台");
-    } finally {
         hideLoading();
-    }
+    });
 }
 
 function processStoreData() {
@@ -591,11 +589,6 @@ function handleImport(file, collectionName) {
             if (dataToImport.length > 0) {
                 await importDataToFirestore(dataToImport, collectionName);
                 alert('数据导入成功！');
-                if (collectionName === 'amazonStores') {
-                    fetchStoreData();
-                } else {
-                    fetchKeywordData();
-                }
             } else {
                 alert('文件内容为空或格式不正确。');
             }
@@ -724,7 +717,6 @@ window.deleteStore = async (id) => {
     if (confirm('确定要删除这条店铺数据吗？')) {
         try {
             await db.collection('amazonStores').doc(id).delete();
-            fetchStoreData();
             alert('删除成功！');
         } catch (error) {
             console.error("删除失败: ", error);
@@ -737,7 +729,6 @@ window.deleteKeyword = async (id) => {
     if (confirm('确定要删除这条关键词数据吗？')) {
         try {
             await db.collection('amazonKeywords').doc(id).delete();
-            fetchKeywordData();
             alert('删除成功！');
         } catch (error) {
             console.error("删除失败: ", error);
@@ -757,7 +748,6 @@ async function deleteSelectedStores() {
             });
             await batch.commit();
             selectedStoreIds = [];
-            fetchStoreData();
             alert('批量删除成功！');
         } catch (error) {
             console.error("批量删除失败: ", error);
@@ -777,7 +767,6 @@ async function deleteSelectedKeywords() {
             });
             await batch.commit();
             selectedKeywordIds = [];
-            fetchKeywordData();
             alert('批量删除成功！');
         } catch (error) {
             console.error("批量删除失败: ", error);
@@ -792,8 +781,8 @@ storesTab.addEventListener('click', () => {
     keywordsTab.classList.remove('active');
     storesView.classList.remove('hidden');
     keywordsView.classList.add('hidden');
-    if (storeData.length === 0) fetchStoreData();
-    else processStoreData();
+    // 不需要再次获取数据，监听器会自动同步
+    processStoreData();
     updateSortIcon(ratingHeader, storeSortDir);
 });
 
@@ -802,8 +791,8 @@ keywordsTab.addEventListener('click', () => {
     storesTab.classList.remove('active');
     keywordsView.classList.remove('hidden');
     storesView.classList.add('hidden');
-    if (keywordData.length === 0) fetchKeywordData();
-    else processKeywordData();
+    // 不需要再次获取数据，监听器会自动同步
+    processKeywordData();
     updateSortIcon(keywordDateHeader, keywordSortDir);
 });
 

@@ -57,6 +57,9 @@ const keywordSelectAll = document.getElementById('keyword-select-all');
 const keywordDeleteSelectedBtn = document.getElementById('keyword-delete-selected-btn');
 const keywordDownloadTemplateBtn = document.getElementById('keyword-download-template-btn');
 
+// 通知容器
+const notificationContainer = document.getElementById('notification-container');
+
 
 // 原始数据和过滤数据
 let storeData = [];
@@ -108,6 +111,26 @@ const SITE_MAP = {
 function getSiteAbbreviation(domain) {
     return SITE_MAP[domain] || domain;
 }
+
+// --- 通用通知功能 ---
+/**
+ * 显示一个临时的通知
+ * @param {string} message - 通知信息
+ * @param {'success'|'error'} type - 通知类型
+ */
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+
+    notificationContainer.appendChild(notification);
+
+    // 在 3 秒后自动移除通知
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
 
 // --- 认证功能 ---
 loginForm.addEventListener('submit', async (e) => {
@@ -164,7 +187,7 @@ function startRealtimeListeners() {
         hideLoading();
     }, error => {
         console.error("获取店铺数据失败: ", error);
-        alert("获取店铺数据失败，请检查控制台");
+        showNotification("获取店铺数据失败，请检查控制台", 'error');
         hideLoading();
     });
 
@@ -175,7 +198,7 @@ function startRealtimeListeners() {
         hideLoading();
     }, error => {
         console.error("获取关键词数据失败: ", error);
-        alert("获取关键词数据失败，请检查控制台");
+        showNotification("获取关键词数据失败，请检查控制台", 'error');
         hideLoading();
     });
 }
@@ -508,7 +531,7 @@ function renderKeywordTable() {
 // --- 导入导出功能 ---
 function exportToCsv(data, filename) {
     if (data.length === 0) {
-        alert('没有数据可供导出！');
+        showNotification('没有数据可供导出！', 'error');
         return;
     }
     
@@ -560,7 +583,7 @@ function downloadTemplate(headers, filename) {
 
 function handleImport(file, collectionName) {
     if (!file) {
-        alert('请选择一个文件！');
+        showNotification('请选择一个文件！', 'error');
         return;
     }
 
@@ -588,13 +611,13 @@ function handleImport(file, collectionName) {
 
             if (dataToImport.length > 0) {
                 await importDataToFirestore(dataToImport, collectionName);
-                alert('数据导入成功！');
+                showNotification('数据导入成功！', 'success');
             } else {
-                alert('文件内容为空或格式不正确。');
+                showNotification('文件内容为空或格式不正确。', 'error');
             }
         } catch (error) {
             console.error("导入文件失败: ", error);
-            alert('文件解析失败，请确保格式正确。');
+            showNotification('文件解析失败，请确保格式正确。', 'error');
         }
     };
     reader.readAsText(file);
@@ -717,10 +740,10 @@ window.deleteStore = async (id) => {
     if (confirm('确定要删除这条店铺数据吗？')) {
         try {
             await db.collection('amazonStores').doc(id).delete();
-            alert('删除成功！');
+            showNotification('删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
-            alert('删除失败，请检查控制台。');
+            showNotification('删除失败，请检查控制台。', 'error');
         }
     }
 }
@@ -729,10 +752,10 @@ window.deleteKeyword = async (id) => {
     if (confirm('确定要删除这条关键词数据吗？')) {
         try {
             await db.collection('amazonKeywords').doc(id).delete();
-            alert('删除成功！');
+            showNotification('删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
-            alert('删除失败，请检查控制台。');
+            showNotification('删除失败，请检查控制台。', 'error');
         }
     }
 }
@@ -748,10 +771,10 @@ async function deleteSelectedStores() {
             });
             await batch.commit();
             selectedStoreIds = [];
-            alert('批量删除成功！');
+            showNotification('批量删除成功！', 'success');
         } catch (error) {
             console.error("批量删除失败: ", error);
-            alert('批量删除失败，请检查控制台。');
+            showNotification('批量删除失败，请检查控制台。', 'error');
         }
     }
 }
@@ -767,10 +790,10 @@ async function deleteSelectedKeywords() {
             });
             await batch.commit();
             selectedKeywordIds = [];
-            alert('批量删除成功！');
+            showNotification('批量删除成功！', 'success');
         } catch (error) {
             console.error("批量删除失败: ", error);
-            alert('批量删除失败，请检查控制台。');
+            showNotification('批量删除失败，请检查控制台。', 'error');
         }
     }
 }

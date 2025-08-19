@@ -311,6 +311,13 @@ body {
 .data-table th:nth-child(9), .data-table td:nth-child(9) { width: 12%; } 
 .data-table th:nth-child(10), .data-table td:nth-child(10) { width: 100px; } 
 
+/* 新增产品数据表格列宽 */
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 80px; } /* 图片 */
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 8%; }  /* 价格 */
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 15%; } /* 产品名称 */
+.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 15%; } /* 中文名称 */
+.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 100px; } /* 日期 */
+.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 100px; } /* 操作 */
 
 .data-table th .sort-icon {
     font-size: 12px;
@@ -385,6 +392,49 @@ body {
     visibility: visible;
     opacity: 1;
 }
+
+/* 新增产品图片样式 */
+.product-image-container {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.product-image-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* 修改后的代码 */
+.product-image-large {
+    position: fixed; /* 使用 fixed 定位，使其相对于视口而不是父元素 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8); /* 初始缩放至80%，并居中 */
+    opacity: 0;
+    pointer-events: none;
+    max-width: 90vw; /* 限制最大宽度为视口宽度的90% */
+    max-height: 90vh; /* 限制最大高度为视口高度的90% */
+    height: auto;
+    z-index: 9999; /* 确保它在最顶层 */
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.product-image-container:hover .product-image-large {
+    transform: translate(-50%, -50%) scale(1); /* 悬停时恢复为100%比例并保持居中 */
+    opacity: 1;
+    pointer-events: auto;
+}
+
 
 /* Notification styles */
 .notification-container {

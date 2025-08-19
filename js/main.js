@@ -25,23 +25,34 @@ const authError = document.getElementById('auth-error');
 const logoutBtn = document.getElementById('logout-btn');
 const storesTab = document.getElementById('stores-tab');
 const keywordsTab = document.getElementById('keywords-tab');
+const productsTab = document.getElementById('products-tab');
 const storesView = document.getElementById('stores-view');
 const keywordsView = document.getElementById('keywords-view');
+const productsView = document.getElementById('products-view');
 const loadingSkeleton = document.getElementById('loading-skeleton');
 
 const storeTableBody = document.getElementById('store-table-body');
 const storeNoData = document.getElementById('stores-no-data');
 const keywordTableBody = document.getElementById('keyword-table-body');
 const keywordNoData = document.getElementById('keywords-no-data');
+const productTableBody = document.getElementById('product-table-body');
+const productNoData = document.getElementById('products-no-data');
+
 const storeCountSpan = document.getElementById('store-count');
 const keywordCountSpan = document.getElementById('keyword-count');
+const productCountSpan = document.getElementById('product-count');
+
 const ratingHeader = document.getElementById('rating-header');
 const keywordDateHeader = document.getElementById('keyword-date-header');
+const productDateHeader = document.getElementById('product-date-header');
+
 const storeFiltersDiv = document.getElementById('store-filters');
 const keywordFiltersDiv = document.getElementById('keyword-filters');
+const productFiltersDiv = document.getElementById('product-filters');
 
 const storeSearchInput = document.getElementById('store-search-input');
 const keywordSearchInput = document.getElementById('keyword-search-input');
+const productSearchInput = document.getElementById('product-search-input');
 
 const storeImportBtn = document.getElementById('store-import-btn');
 const storeImportFile = document.getElementById('store-import-file');
@@ -57,6 +68,13 @@ const keywordSelectAll = document.getElementById('keyword-select-all');
 const keywordDeleteSelectedBtn = document.getElementById('keyword-delete-selected-btn');
 const keywordDownloadTemplateBtn = document.getElementById('keyword-download-template-btn');
 
+const productImportBtn = document.getElementById('product-import-btn');
+const productImportFile = document.getElementById('product-import-file');
+const productExportBtn = document.getElementById('product-export-btn');
+const productSelectAll = document.getElementById('product-select-all');
+const productDeleteSelectedBtn = document.getElementById('product-delete-selected-btn');
+const productDownloadTemplateBtn = document.getElementById('product-download-template-btn');
+
 // 通知容器
 const notificationContainer = document.getElementById('notification-container');
 
@@ -64,21 +82,27 @@ const notificationContainer = document.getElementById('notification-container');
 // 原始数据和过滤数据
 let storeData = [];
 let keywordData = [];
+let productData = [];
 let filteredStoreData = [];
 let filteredKeywordData = [];
+let filteredProductData = [];
 
 // 排序和筛选状态
 let storeSortKey = 'rating';
 let storeSortDir = 'desc';
 let keywordSortKey = 'date';
 let keywordSortDir = 'desc';
+let productSortKey = 'createdAt';
+let productSortDir = 'desc';
 
 let activeStoreSiteFilter = 'all';
 let activeKeywordSiteFilter = 'all';
+let activeProductSiteFilter = 'all';
 
 // 多选状态
 let selectedStoreIds = [];
 let selectedKeywordIds = [];
+let selectedProductIds = [];
 
 // 亚马逊站点域名与缩写映射
 const SITE_MAP = {
@@ -167,14 +191,17 @@ function showLoading() {
     loadingSkeleton.classList.remove('hidden');
     storesView.classList.add('hidden');
     keywordsView.classList.add('hidden');
+    productsView.classList.add('hidden');
 }
 
 function hideLoading() {
     loadingSkeleton.classList.add('hidden');
     if (storesTab.classList.contains('active')) {
         storesView.classList.remove('hidden');
-    } else {
+    } else if (keywordsTab.classList.contains('active')) {
         keywordsView.classList.remove('hidden');
+    } else {
+        productsView.classList.remove('hidden');
     }
 }
 
@@ -201,6 +228,17 @@ function startRealtimeListeners() {
         showNotification("获取关键词数据失败，请检查控制台", 'error');
         hideLoading();
     });
+    
+    // 新增产品数据监听
+    db.collection('amazonProducts').onSnapshot(snapshot => {
+        productData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        processProductData();
+        hideLoading();
+    }, error => {
+        console.error("获取产品数据失败: ", error);
+        showNotification("获取产品数据失败，请检查控制台", 'error');
+        hideLoading();
+    });
 }
 
 function processStoreData() {
@@ -214,6 +252,13 @@ function processKeywordData() {
     filterAndSortKeywordData();
     renderKeywordTable();
 }
+
+function processProductData() {
+    renderSiteFilters(productFiltersDiv, productData, 'product');
+    filterAndSortProductData();
+    renderProductTable();
+}
+
 
 // --- 筛选和排序功能 ---
 function filterAndSortStoreData() {
@@ -266,6 +311,27 @@ function filterAndSortKeywordData() {
     });
 }
 
+function filterAndSortProductData() {
+    const searchTerm = productSearchInput.value.toLowerCase();
+    filteredProductData = productData.filter(item => {
+        const siteMatch = activeProductSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeProductSiteFilter;
+        const searchMatch = !searchTerm || (item.productName && item.productName.toLowerCase().includes(searchTerm)) || (item.productNameZh && item.productNameZh.toLowerCase().includes(searchTerm)) || (item.asin && item.asin.toLowerCase().includes(searchTerm));
+        return siteMatch && searchMatch;
+    });
+    filteredProductData.sort((a, b) => {
+        let valA = a[productSortKey];
+        let valB = b[productSortKey];
+        if (productSortKey === 'createdAt') {
+            valA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            valB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        }
+        if (valA < valB) return productSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return productSortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+
+
 // 绑定搜索事件
 storeSearchInput.addEventListener('input', () => {
     filterAndSortStoreData();
@@ -277,6 +343,11 @@ keywordSearchInput.addEventListener('input', () => {
     renderKeywordTable();
 });
 
+productSearchInput.addEventListener('input', () => {
+    filterAndSortProductData();
+    renderProductTable();
+});
+
 // 渲染站点筛选按钮
 function renderSiteFilters(container, data, type) {
     container.innerHTML = '';
@@ -286,7 +357,8 @@ function renderSiteFilters(container, data, type) {
     const allBtn = document.createElement('button');
     allBtn.textContent = '全部站点';
     allBtn.classList.add('btn', 'filter-btn');
-    if ((type === 'store' && activeStoreSiteFilter === 'all') || (type === 'keyword' && activeKeywordSiteFilter === 'all')) {
+    const activeFilter = type === 'store' ? activeStoreSiteFilter : (type === 'keyword' ? activeKeywordSiteFilter : activeProductSiteFilter);
+    if (activeFilter === 'all') {
         allBtn.classList.add('active');
     }
     allBtn.addEventListener('click', () => {
@@ -294,10 +366,14 @@ function renderSiteFilters(container, data, type) {
             activeStoreSiteFilter = 'all';
             filterAndSortStoreData();
             renderStoreTable();
-        } else {
+        } else if (type === 'keyword') {
             activeKeywordSiteFilter = 'all';
             filterAndSortKeywordData();
             renderKeywordTable();
+        } else {
+            activeProductSiteFilter = 'all';
+            filterAndSortProductData();
+            renderProductTable();
         }
         updateFilterButtonState(container, 'all');
     });
@@ -307,7 +383,7 @@ function renderSiteFilters(container, data, type) {
         const btn = document.createElement('button');
         btn.textContent = site;
         btn.classList.add('btn', 'filter-btn');
-        if ((type === 'store' && activeStoreSiteFilter === site) || (type === 'keyword' && activeKeywordSiteFilter === site)) {
+        if (activeFilter === site) {
             btn.classList.add('active');
         }
         btn.addEventListener('click', () => {
@@ -315,10 +391,14 @@ function renderSiteFilters(container, data, type) {
                 activeStoreSiteFilter = site;
                 filterAndSortStoreData();
                 renderStoreTable();
-            } else {
+            } else if (type === 'keyword') {
                 activeKeywordSiteFilter = site;
                 filterAndSortKeywordData();
                 renderKeywordTable();
+            } else {
+                activeProductSiteFilter = site;
+                filterAndSortProductData();
+                renderProductTable();
             }
             updateFilterButtonState(container, site);
         });
@@ -343,7 +423,12 @@ function updateFilterButtonState(container, activeSite) {
 function updateSortIcon(headerElement, sortDir) {
     const sortIcon = headerElement.querySelector('.sort-icon');
     if (sortIcon) {
+        headerElement.closest('thead').querySelectorAll('.sort-icon').forEach(icon => {
+            icon.textContent = '';
+            icon.dataset.sortDir = '';
+        });
         sortIcon.textContent = sortDir === 'asc' ? '▲' : '▼';
+        sortIcon.dataset.sortDir = sortDir;
     }
 }
 
@@ -362,6 +447,14 @@ keywordDateHeader.addEventListener('click', () => {
     filterAndSortKeywordData();
     updateSortIcon(keywordDateHeader, keywordSortDir);
     renderKeywordTable();
+});
+
+productDateHeader.addEventListener('click', () => {
+    productSortDir = productSortDir === 'desc' ? 'asc' : 'desc';
+    productSortKey = 'createdAt';
+    filterAndSortProductData();
+    updateSortIcon(productDateHeader, productSortDir);
+    renderProductTable();
 });
 
 // --- 渲染表格功能 ---
@@ -528,6 +621,92 @@ function renderKeywordTable() {
     keywordSelectAll.checked = selectedKeywordIds.length > 0 && selectedKeywordIds.length === filteredKeywordData.length;
 }
 
+function renderProductTable() {
+    productTableBody.innerHTML = '';
+    productNoData.classList.add('hidden');
+    productCountSpan.textContent = filteredProductData.length;
+    productDeleteSelectedBtn.disabled = selectedProductIds.length === 0;
+
+    if (filteredProductData.length === 0) {
+        productNoData.classList.remove('hidden');
+        productSelectAll.disabled = true;
+        productSelectAll.checked = false;
+        return;
+    } else {
+        productSelectAll.disabled = false;
+    }
+
+    filteredProductData.forEach((item, index) => {
+        const isSelected = selectedProductIds.includes(item.id);
+        const tr = document.createElement('tr');
+        if (isSelected) {
+            tr.classList.add('selected');
+        }
+        tr.dataset.id = item.id;
+
+        const productUrl = item.url || '#';
+        const hasUrl = productUrl !== '#';
+
+        const asinLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.asin || 'N/A'}</a>` : (item.asin || 'N/A');
+        const productNameLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.productName || 'N/A'}</a>` : (item.productName || 'N/A');
+        const productNameZhLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.productNameZh || 'N/A'}</a>` : (item.productNameZh || 'N/A');
+        const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A';
+
+        const imageHtml = item.mainImageURL ? `
+            <div class="product-image-container">
+                <img src="${item.mainImageURL}" alt="Product Image" class="product-image-thumb">
+                <img src="${item.mainImageURL}" alt="Product Image Large" class="product-image-large">
+            </div>` : 'N/A';
+
+        tr.innerHTML = `
+            <td><input type="checkbox" class="product-checkbox" data-id="${item.id}" ${isSelected ? 'checked' : ''}></td>
+            <td>${index + 1}</td>
+            <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
+            <td data-tooltip="${item.asin || 'N/A'}">${asinLink}</td>
+            <td>${imageHtml}</td>
+            <td data-tooltip="${item.price || 'N/A'}">${item.price || 'N/A'}</td>
+            <td data-tooltip="${item.productName || 'N/A'}">${productNameLink}</td>
+            <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
+            <td data-tooltip="${date}">${date}</td>
+            <td>
+                <button class="btn secondary-btn" onclick="deleteProduct('${item.id}')">删除</button>
+            </td>
+        `;
+        productTableBody.appendChild(tr);
+    });
+
+    productTableBody.querySelectorAll('tr').forEach(row => {
+        const checkbox = row.querySelector('.product-checkbox');
+        row.addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'input') {
+                return;
+            }
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
+    });
+
+    productTableBody.querySelectorAll('.product-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            const row = e.target.closest('tr');
+            if (e.target.checked) {
+                if (!selectedProductIds.includes(id)) {
+                    selectedProductIds.push(id);
+                }
+                row.classList.add('selected');
+            } else {
+                selectedProductIds = selectedProductIds.filter(itemId => itemId !== id);
+                row.classList.remove('selected');
+            }
+            productDeleteSelectedBtn.disabled = selectedProductIds.length === 0;
+            productSelectAll.checked = selectedProductIds.length === filteredProductData.length;
+        });
+    });
+    
+    productSelectAll.checked = selectedProductIds.length > 0 && selectedProductIds.length === filteredProductData.length;
+}
+
 // --- 导入导出功能 ---
 function exportToCsv(data, filename) {
     if (data.length === 0) {
@@ -563,6 +742,7 @@ function exportToCsv(data, filename) {
 // 模板文件下载函数
 const storeTemplateHeaders = ['site', 'sellerId', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals', 'url'];
 const keywordTemplateHeaders = ['site', 'keyword', 'keywordZh', 'count', 'date', 'url'];
+const productTemplateHeaders = ['site', 'asin', 'mainImageURL', 'price', 'productName', 'productNameZh', 'createdAt', 'url'];
 
 function downloadTemplate(headers, filename) {
     const csvRows = [];
@@ -628,8 +808,8 @@ async function importDataToFirestore(data, collectionName) {
     const collectionRef = db.collection(collectionName);
     const uniqueRecords = new Map();
 
-    // Find a suitable unique identifier. Assuming `sellerName` for stores and `keyword` for keywords.
-    const uniqueKey = collectionName === 'amazonStores' ? 'sellerName' : 'keyword';
+    // Find a suitable unique identifier. Assuming `sellerName` for stores, `keyword` for keywords, and `asin` for products.
+    const uniqueKey = collectionName === 'amazonStores' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
 
     for (const record of data) {
         if (record[uniqueKey]) {
@@ -692,31 +872,53 @@ keywordDownloadTemplateBtn.addEventListener('click', () => {
     downloadTemplate(keywordTemplateHeaders, 'amazon_keywords_template.csv');
 });
 
+productExportBtn.addEventListener('click', () => {
+    exportToCsv(filteredProductData, 'amazon_products.csv');
+});
+
+productImportBtn.addEventListener('click', () => {
+    productImportFile.click();
+});
+
+productImportFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleImport(file, 'amazonProducts');
+});
+
+productDownloadTemplateBtn.addEventListener('click', () => {
+    downloadTemplate(productTemplateHeaders, 'amazon_products_template.csv');
+});
+
 storeDeleteSelectedBtn.addEventListener('click', deleteSelectedStores);
 keywordDeleteSelectedBtn.addEventListener('click', deleteSelectedKeywords);
+productDeleteSelectedBtn.addEventListener('click', deleteSelectedProducts);
 
 
 // 全选/取消全选功能
 storeSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'store'));
 keywordSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'keyword'));
+productSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'product'));
 
 function toggleSelectAll(isChecked, type) {
     const checkboxes = document.querySelectorAll(`.${type}-checkbox`);
-    const deleteBtn = type === 'store' ? storeDeleteSelectedBtn : keywordDeleteSelectedBtn;
-    const tableBody = type === 'store' ? storeTableBody : keywordTableBody;
+    let selectedIds;
+    let filteredData;
+
+    if (type === 'store') {
+        selectedIds = selectedStoreIds;
+        filteredData = filteredStoreData;
+    } else if (type === 'keyword') {
+        selectedIds = selectedKeywordIds;
+        filteredData = filteredKeywordData;
+    } else {
+        selectedIds = selectedProductIds;
+        filteredData = filteredProductData;
+    }
 
     if (isChecked) {
-        if (type === 'store') {
-            selectedStoreIds = filteredStoreData.map(item => item.id);
-        } else {
-            selectedKeywordIds = filteredKeywordData.map(item => item.id);
-        }
+        selectedIds = filteredData.map(item => item.id);
     } else {
-        if (type === 'store') {
-            selectedStoreIds = [];
-        } else {
-            selectedKeywordIds = [];
-        }
+        selectedIds = [];
     }
     
     checkboxes.forEach(cb => {
@@ -731,7 +933,16 @@ function toggleSelectAll(isChecked, type) {
         }
     });
 
-    deleteBtn.disabled = selectedStoreIds.length === 0 && selectedKeywordIds.length === 0;
+    if (type === 'store') {
+        selectedStoreIds = selectedIds;
+        storeDeleteSelectedBtn.disabled = selectedStoreIds.length === 0;
+    } else if (type === 'keyword') {
+        selectedKeywordIds = selectedIds;
+        keywordDeleteSelectedBtn.disabled = selectedKeywordIds.length === 0;
+    } else {
+        selectedProductIds = selectedIds;
+        productDeleteSelectedBtn.disabled = selectedProductIds.length === 0;
+    }
 }
 
 
@@ -759,6 +970,19 @@ window.deleteKeyword = async (id) => {
         }
     }
 }
+
+window.deleteProduct = async (id) => {
+    if (confirm('确定要删除这条产品数据吗？')) {
+        try {
+            await db.collection('amazonProducts').doc(id).delete();
+            showNotification('删除成功！', 'success');
+        } catch (error) {
+            console.error("删除失败: ", error);
+            showNotification('删除失败，请检查控制台。', 'error');
+        }
+    }
+}
+
 
 async function deleteSelectedStores() {
     if (selectedStoreIds.length === 0) return;
@@ -798,12 +1022,33 @@ async function deleteSelectedKeywords() {
     }
 }
 
+async function deleteSelectedProducts() {
+    if (selectedProductIds.length === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedProductIds.length} 条产品数据吗？`)) {
+        try {
+            const batch = db.batch();
+            selectedProductIds.forEach(id => {
+                const docRef = db.collection('amazonProducts').doc(id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            selectedProductIds = [];
+            showNotification('批量删除成功！', 'success');
+        } catch (error) {
+            console.error("批量删除失败: ", error);
+            showNotification('批量删除失败，请检查控制台。', 'error');
+        }
+    }
+}
+
 // --- 页面切换功能 ---
 storesTab.addEventListener('click', () => {
     storesTab.classList.add('active');
     keywordsTab.classList.remove('active');
+    productsTab.classList.remove('active');
     storesView.classList.remove('hidden');
     keywordsView.classList.add('hidden');
+    productsView.classList.add('hidden');
     // 不需要再次获取数据，监听器会自动同步
     processStoreData();
     updateSortIcon(ratingHeader, storeSortDir);
@@ -812,11 +1057,25 @@ storesTab.addEventListener('click', () => {
 keywordsTab.addEventListener('click', () => {
     keywordsTab.classList.add('active');
     storesTab.classList.remove('active');
+    productsTab.classList.remove('active');
     keywordsView.classList.remove('hidden');
     storesView.classList.add('hidden');
+    productsView.classList.add('hidden');
     // 不需要再次获取数据，监听器会自动同步
     processKeywordData();
     updateSortIcon(keywordDateHeader, keywordSortDir);
+});
+
+productsTab.addEventListener('click', () => {
+    storesTab.classList.remove('active');
+    keywordsTab.classList.remove('active');
+    productsTab.classList.add('active');
+    storesView.classList.add('hidden');
+    keywordsView.classList.add('hidden');
+    productsView.classList.remove('hidden');
+
+    processProductData();
+    updateSortIcon(productDateHeader, productSortDir);
 });
 
 // 初始化时自动加载数据

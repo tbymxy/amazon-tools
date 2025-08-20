@@ -208,7 +208,7 @@ function hideLoading() {
 // --- 实时监听器功能 ---
 function startRealtimeListeners() {
     // 店铺数据监听
-    db.collection('amazonStores').onSnapshot(snapshot => {
+    db.collection('amazonSeller').onSnapshot(snapshot => {
         storeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         processStoreData();
         hideLoading();
@@ -809,7 +809,7 @@ async function importDataToFirestore(data, collectionName) {
     const uniqueRecords = new Map();
 
     // Find a suitable unique identifier. Assuming `sellerName` for stores, `keyword` for keywords, and `asin` for products.
-    const uniqueKey = collectionName === 'amazonStores' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
+    const uniqueKey = collectionName === 'amazonSeller' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
 
     for (const record of data) {
         if (record[uniqueKey]) {
@@ -848,7 +848,7 @@ storeImportBtn.addEventListener('click', () => {
 
 storeImportFile.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    handleImport(file, 'amazonStores');
+    handleImport(file, 'amazonSeller');
 });
 
 storeDownloadTemplateBtn.addEventListener('click', () => {
@@ -950,7 +950,7 @@ function toggleSelectAll(isChecked, type) {
 window.deleteStore = async (id) => {
     if (confirm('确定要删除这条店铺数据吗？')) {
         try {
-            await db.collection('amazonStores').doc(id).delete();
+            await db.collection('amazonSeller').doc(id).delete();
             showNotification('删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
@@ -990,7 +990,7 @@ async function deleteSelectedStores() {
         try {
             const batch = db.batch();
             selectedStoreIds.forEach(id => {
-                const docRef = db.collection('amazonStores').doc(id);
+                const docRef = db.collection('amazonSeller').doc(id);
                 batch.delete(docRef);
             });
             await batch.commit();
@@ -1083,4 +1083,5 @@ auth.onAuthStateChanged((user) => {
     if (user) {
         storesTab.click();
     }
+
 });

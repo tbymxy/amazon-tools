@@ -557,7 +557,7 @@ function renderKeywordTable() {
     } else {
         keywordSelectAll.disabled = false;
     }
-    
+
     filteredKeywordData.forEach((item, index) => {
         const isSelected = selectedKeywordIds.includes(item.id);
         const tr = document.createElement('tr');
@@ -565,11 +565,9 @@ function renderKeywordTable() {
             tr.classList.add('selected');
         }
         tr.dataset.id = item.id;
-        
         const keywordUrl = item.url || '#';
         const date = item.date || 'N/A';
         const hasUrl = keywordUrl !== '#';
-
         const keywordLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.keyword || 'N/A'}</a>` : (item.keyword || 'N/A');
         const keywordZhLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.keywordZh || 'N/A'}</a>` : (item.keywordZh || 'N/A');
         const countLink = hasUrl ? `<a href="${keywordUrl}" target="_blank">${item.count || 'N/A'}</a>` : (item.count || 'N/A');
@@ -617,7 +615,7 @@ function renderKeywordTable() {
             keywordSelectAll.checked = selectedKeywordIds.length === filteredKeywordData.length;
         });
     });
-    
+
     keywordSelectAll.checked = selectedKeywordIds.length > 0 && selectedKeywordIds.length === filteredKeywordData.length;
 }
 
@@ -643,15 +641,12 @@ function renderProductTable() {
             tr.classList.add('selected');
         }
         tr.dataset.id = item.id;
-
         const productUrl = item.url || '#';
         const hasUrl = productUrl !== '#';
-
         const asinLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.asin || 'N/A'}</a>` : (item.asin || 'N/A');
         const productNameLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.productName || 'N/A'}</a>` : (item.productName || 'N/A');
         const productNameZhLink = hasUrl ? `<a href="${productUrl}" target="_blank">${item.productNameZh || 'N/A'}</a>` : (item.productNameZh || 'N/A');
         const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A';
-
         const imageHtml = item.mainImageURL ? `
             <div class="product-image-container">
                 <img src="${item.mainImageURL}" alt="Product Image" class="product-image-thumb">
@@ -678,7 +673,7 @@ function renderProductTable() {
     productTableBody.querySelectorAll('tr').forEach(row => {
         const checkbox = row.querySelector('.product-checkbox');
         row.addEventListener('click', (e) => {
-            if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'input') {
+            if (e.target.tagName.toLowerCase() === 'button') {
                 return;
             }
             checkbox.checked = !checkbox.checked;
@@ -703,267 +698,261 @@ function renderProductTable() {
             productSelectAll.checked = selectedProductIds.length === filteredProductData.length;
         });
     });
-    
+
     productSelectAll.checked = selectedProductIds.length > 0 && selectedProductIds.length === filteredProductData.length;
 }
 
-// --- 导入导出功能 (适配 JSON 格式) ---
 
+// --- CSV 解析功能 ---
 /**
- * 将数据导出为 JSON 文件
- * @param {Array<Object>} data 要导出的数据对象数组
- * @param {string} filename 导出的文件名
+ * 解析 CSV 字符串为对象数组
+ * @param {string} text - CSV 字符串
+ * @returns {Array<Object>} - 对象数组
  */
-function exportToJson(data, filename) {
-    if (data.length === 0) {
-        showNotification('没有数据可供导出！', 'error');
-        return;
+function parseCSV(text) {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) {
+        return [];
     }
-
-    // 将数据对象数组转换为格式化的 JSON 字符串
-    const jsonString = JSON.stringify(data, null, 2);
-
-    // 创建 Blob 对象，MIME 类型为 application/json
-    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    // 创建下载链接并触发点击
-    link.href = URL.createObjectURL(blob);
-    link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const headers = lines[0].split(',').map(header => header.trim());
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(value => value.trim());
+        if (values.length !== headers.length) {
+            console.warn(`跳过格式不正确的行: ${lines[i]}`);
+            continue;
+        }
+        const obj = {};
+        for (let j = 0; j < headers.length; j++) {
+            obj[headers[j]] = values[j];
+        }
+        data.push(obj);
+    }
+    return data;
 }
 
+// --- 通用导入功能（已改进） ---
 /**
- * 下载 JSON 模板文件
- * @param {Array<string>} headers 模板文件的键名数组
- * @param {string} filename 模板文件名
+ * 通用文件导入函数，支持 JSON 和 CSV
+ * @param {Event} event - change 事件对象
+ * @param {string} collectionName - Firestore 集合名
+ * @param {string[]} requiredKeys - 导入数据必须包含的字段
+ * @param {string} successMessage - 导入成功后的提示信息
  */
-function downloadTemplate(headers, filename) {
-    const templateData = {};
-    headers.forEach(header => {
-        templateData[header] = "";
-    });
+async function handleFileImport(event, collectionName, requiredKeys, successMessage) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    const templateJson = JSON.stringify([templateData], null, 2);
-    
-    // 创建 Blob 对象，MIME 类型为 application/json
-    const blob = new Blob([templateJson], { type: 'application/json;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    // 创建下载链接并触发点击
-    link.href = URL.createObjectURL(blob);
-    link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-/**
- * 处理 JSON 文件的导入
- * @param {File} file 用户选择的文件对象
- * @param {string} collectionName 要导入的 Firestore 集合名
- */
-function handleImport(file, collectionName) {
-    if (!file) {
-        showNotification('请选择一个文件！', 'error');
-        return;
-    }
-
-    // 检查文件类型，确保是 JSON
-    if (file.type !== 'application/json') {
-        showNotification('请选择一个 JSON 文件！', 'error');
-        return;
-    }
-
+    const fileExtension = file.name.split('.').pop().toLowerCase();
     const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const text = e.target.result;
-            // 直接解析 JSON 字符串
-            const dataToImport = JSON.parse(text);
 
-            if (!Array.isArray(dataToImport) || dataToImport.length === 0) {
-                showNotification('文件内容为空或格式不正确。', 'error');
-                return;
+    reader.onload = async (e) => {
+        const content = e.target.result;
+        try {
+            let data = [];
+            if (fileExtension === 'json') {
+                // 修复：在解析前修剪内容以移除 BOM 等不可见字符
+                data = JSON.parse(content.trim());
+            } else if (fileExtension === 'csv') {
+                data = parseCSV(content);
             }
 
-            // 检查每个对象是否都是有效的键值对
-            const isValidData = dataToImport.every(item => typeof item === 'object' && item !== null);
-            if (!isValidData) {
-                showNotification('文件内容格式不正确，应为 JSON 对象数组。', 'error');
-                return;
+            if (!Array.isArray(data)) {
+                throw new Error('导入的数据格式不正确，期望一个数组。');
             }
             
-            // 导入数据到 Firestore
-            await importDataToFirestore(dataToImport, collectionName);
-            showNotification('数据导入成功！', 'success');
-
+            if (data.length > 0) {
+                const firstItem = data[0];
+                const missingKeys = requiredKeys.filter(key => !(key in firstItem));
+                if (missingKeys.length > 0) {
+                    throw new Error(`JSON/CSV 数据中缺少必要的字段: ${missingKeys.join(', ')}。`);
+                }
+            }
+            
+            await importDataToFirestore(db.collection(collectionName), data);
+            
+            showNotification(successMessage, 'success');
         } catch (error) {
-            console.error("导入文件失败: ", error);
-            showNotification('文件解析失败，请确保是有效的 JSON 格式。', 'error');
+            console.error('文件解析失败:', error);
+            showNotification(`文件解析失败：${error.message}`, 'error');
         }
     };
-    reader.readAsText(file);
+    
+    // 根据文件类型选择读取方式
+    if (fileExtension === 'csv') {
+        reader.readAsText(file);
+    } else if (fileExtension === 'json') {
+        reader.readAsText(file, 'UTF-8');
+    }
 }
 
-// 模板文件下载的键名数组（与业务逻辑相关，保持不变）
-const storeTemplateHeaders = ['site', 'sellerId', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals', 'url'];
-const keywordTemplateHeaders = ['site', 'keyword', 'keywordZh', 'count', 'date', 'url'];
-const productTemplateHeaders = ['site', 'asin', 'mainImageURL', 'price', 'productName', 'productNameZh', 'createdAt', 'url'];
 
-// 以下函数无需修改，因为它们处理的是数据对象，与文件格式无关
-async function importDataToFirestore(data, collectionName) {
-    const batch = db.batch();
-    const collectionRef = db.collection(collectionName);
-    const uniqueRecords = new Map();
-
-    const uniqueKey = collectionName === 'amazonSeller' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
-
-    for (const record of data) {
-        if (record[uniqueKey]) {
-            uniqueRecords.set(record[uniqueKey], record);
-        }
+// --- 导入到 Firestore 功能 ---
+/**
+ * 批量导入数据到 Firestore
+ * @param {firebase.firestore.CollectionReference} collectionRef - 目标 Firestore 集合
+ * @param {Array<Object>} data - 待导入的对象数组
+ */
+async function importDataToFirestore(collectionRef, data) {
+    if (data.length === 0) {
+        showNotification('导入数据为空，操作取消。', 'info');
+        return;
     }
 
-    const uniqueRecordsArray = Array.from(uniqueRecords.values());
-    const existingDocs = await collectionRef.where(uniqueKey, 'in', Array.from(uniqueRecords.keys())).get();
+    const batch = db.batch();
+    const batchSize = 500;
+    
+    // 增加一个日期/时间戳字段，用于排序
+    const now = new Date().toISOString();
 
-    const existingDocsMap = new Map();
-    existingDocs.forEach(doc => {
-        existingDocsMap.set(doc.data()[uniqueKey], doc.id);
-    });
-
-    for (const record of uniqueRecordsArray) {
-        const existingDocId = existingDocsMap.get(record[uniqueKey]);
-        if (existingDocId) {
-            batch.update(collectionRef.doc(existingDocId), record);
-        } else {
-            batch.set(collectionRef.doc(), record);
+    for (let i = 0; i < data.length; i++) {
+        const docRef = collectionRef.doc();
+        const item = {
+            ...data[i],
+            createdAt: now,
+            updatedAt: now
+        };
+        batch.set(docRef, item);
+        
+        if ((i + 1) % batchSize === 0) {
+            await batch.commit();
+            console.log(`已提交批次 ${Math.floor((i + 1) / batchSize)}`);
+            batch = db.batch();
         }
     }
     
-    await batch.commit();
+    // 提交剩余的文档
+    if (batch._writeQueue.length > 0) {
+        await batch.commit();
+    }
+    console.log("所有数据已成功导入。");
 }
 
-
-storeExportBtn.addEventListener('click', () => {
-    exportToCsv(filteredStoreData, 'amazon_seller.csv');
-});
-
+// --- 文件选择与导入按钮绑定（已改进） ---
 storeImportBtn.addEventListener('click', () => {
     storeImportFile.click();
 });
-
-storeImportFile.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    handleImport(file, 'amazonSeller');
-});
-
-storeDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(storeTemplateHeaders, 'amazon_seller_template');
-});
-
-keywordExportBtn.addEventListener('click', () => {
-    exportToCsv(filteredKeywordData, 'amazon_keywords.csv');
-});
+storeImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonSeller', ['sellerName', 'site'], '店铺数据导入成功！'));
 
 keywordImportBtn.addEventListener('click', () => {
     keywordImportFile.click();
 });
-
-keywordImportFile.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    handleImport(file, 'amazonKeywords');
-});
-
-keywordDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(keywordTemplateHeaders, 'amazon_keywords_template.csv');
-});
-
-productExportBtn.addEventListener('click', () => {
-    exportToCsv(filteredProductData, 'amazon_products.csv');
-});
+keywordImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonKeywords', ['keyword', 'site'], '关键词数据导入成功！'));
 
 productImportBtn.addEventListener('click', () => {
     productImportFile.click();
 });
+productImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonProducts', ['asin', 'site'], '产品数据导入成功！'));
 
-productImportFile.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    handleImport(file, 'amazonProducts');
+// --- 导出功能 ---
+/**
+ * 导出数据为 JSON 或 CSV
+ * @param {Array<Object>} data - 待导出的数据
+ * @param {string} type - 导出类型 ('json' 或 'csv')
+ * @param {string} filename - 文件名
+ */
+function exportData(data, type, filename) {
+    let content;
+    let mimeType;
+    if (type === 'json') {
+        content = JSON.stringify(data, null, 2);
+        mimeType = 'application/json';
+    } else if (type === 'csv') {
+        if (data.length === 0) {
+            showNotification('无数据可导出。', 'error');
+            return;
+        }
+        const headers = Object.keys(data[0]).join(',');
+        const rows = data.map(item => Object.values(item).map(value => {
+            // 处理值中的逗号和引号
+            const processedValue = ('' + value).replace(/"/g, '""');
+            return `"${processedValue}"`;
+        }).join(','));
+        content = [headers, ...rows].join('\n');
+        mimeType = 'text/csv';
+    } else {
+        showNotification('不支持的导出格式。', 'error');
+        return;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('数据导出成功！', 'success');
+}
+
+
+storeExportBtn.addEventListener('click', () => {
+    exportData(filteredStoreData, 'json', 'stores-data.json');
+});
+keywordExportBtn.addEventListener('click', () => {
+    exportData(filteredKeywordData, 'json', 'keywords-data.json');
+});
+productExportBtn.addEventListener('click', () => {
+    exportData(filteredProductData, 'json', 'products-data.json');
+});
+
+
+// --- 下载模板功能 ---
+function downloadTemplate(keys, filename) {
+    const templateData = [{
+        ...keys.reduce((acc, key) => {
+            acc[key] = '';
+            return acc;
+        }, {})
+    }];
+    exportData(templateData, 'csv', filename);
+}
+
+storeDownloadTemplateBtn.addEventListener('click', () => {
+    downloadTemplate(['sellerName', 'site', 'sellerId', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals'], 'stores_template.csv');
+});
+
+keywordDownloadTemplateBtn.addEventListener('click', () => {
+    downloadTemplate(['keyword', 'keywordZh', 'site', 'url', 'count', 'date'], 'keywords_template.csv');
 });
 
 productDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(productTemplateHeaders, 'amazon_products_template.csv');
+    downloadTemplate(['asin', 'site', 'productName', 'productNameZh', 'price', 'mainImageURL'], 'products_template.csv');
 });
 
-storeDeleteSelectedBtn.addEventListener('click', deleteSelectedStores);
-keywordDeleteSelectedBtn.addEventListener('click', deleteSelectedKeywords);
-productDeleteSelectedBtn.addEventListener('click', deleteSelectedProducts);
 
-
-// 全选/取消全选功能
-storeSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'store'));
-keywordSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'keyword'));
-productSelectAll.addEventListener('change', (e) => toggleSelectAll(e.target.checked, 'product'));
-
-function toggleSelectAll(isChecked, type) {
-    const checkboxes = document.querySelectorAll(`.${type}-checkbox`);
-    let selectedIds;
-    let filteredData;
-
-    if (type === 'store') {
-        selectedIds = selectedStoreIds;
-        filteredData = filteredStoreData;
-    } else if (type === 'keyword') {
-        selectedIds = selectedKeywordIds;
-        filteredData = filteredKeywordData;
-    } else {
-        selectedIds = selectedProductIds;
-        filteredData = filteredProductData;
+// --- 删除功能 ---
+async function deleteData(collectionName, ids) {
+    if (ids.length === 0) {
+        showNotification('未选择任何项。', 'info');
+        return;
     }
 
-    if (isChecked) {
-        selectedIds = filteredData.map(item => item.id);
-    } else {
-        selectedIds = [];
+    const confirmMessage = `您确定要删除选中的 ${ids.length} 条数据吗？此操作无法撤销。`;
+    if (!confirm(confirmMessage)) {
+        return;
     }
     
-    checkboxes.forEach(cb => {
-        cb.checked = isChecked;
-        const row = cb.closest('tr');
-        if (row) {
-            if (isChecked) {
-                row.classList.add('selected');
-            } else {
-                row.classList.remove('selected');
-            }
-        }
-    });
-
-    if (type === 'store') {
-        selectedStoreIds = selectedIds;
-        storeDeleteSelectedBtn.disabled = selectedStoreIds.length === 0;
-    } else if (type === 'keyword') {
-        selectedKeywordIds = selectedIds;
-        keywordDeleteSelectedBtn.disabled = selectedKeywordIds.length === 0;
-    } else {
-        selectedProductIds = selectedIds;
-        productDeleteSelectedBtn.disabled = selectedProductIds.length === 0;
+    try {
+        const batch = db.batch();
+        ids.forEach(id => {
+            batch.delete(db.collection(collectionName).doc(id));
+        });
+        await batch.commit();
+        showNotification('数据删除成功！', 'success');
+    } catch (error) {
+        console.error("删除失败: ", error);
+        showNotification('删除失败，请检查控制台。', 'error');
     }
 }
 
-
-// --- 操作功能 ---
-window.deleteStore = async (id) => {
-    if (confirm('确定要删除这条店铺数据吗？')) {
+async function deleteStore(id) {
+    if (confirm("您确定要删除这条店铺数据吗？此操作无法撤销。")) {
         try {
             await db.collection('amazonSeller').doc(id).delete();
-            showNotification('删除成功！', 'success');
+            showNotification('店铺数据删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
             showNotification('删除失败，请检查控制台。', 'error');
@@ -971,11 +960,11 @@ window.deleteStore = async (id) => {
     }
 }
 
-window.deleteKeyword = async (id) => {
-    if (confirm('确定要删除这条关键词数据吗？')) {
+async function deleteKeyword(id) {
+    if (confirm("您确定要删除这条关键词数据吗？此操作无法撤销。")) {
         try {
             await db.collection('amazonKeywords').doc(id).delete();
-            showNotification('删除成功！', 'success');
+            showNotification('关键词数据删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
             showNotification('删除失败，请检查控制台。', 'error');
@@ -983,11 +972,11 @@ window.deleteKeyword = async (id) => {
     }
 }
 
-window.deleteProduct = async (id) => {
-    if (confirm('确定要删除这条产品数据吗？')) {
+async function deleteProduct(id) {
+    if (confirm("您确定要删除这条产品数据吗？此操作无法撤销。")) {
         try {
             await db.collection('amazonProducts').doc(id).delete();
-            showNotification('删除成功！', 'success');
+            showNotification('产品数据删除成功！', 'success');
         } catch (error) {
             console.error("删除失败: ", error);
             showNotification('删除失败，请检查控制台。', 'error');
@@ -995,63 +984,29 @@ window.deleteProduct = async (id) => {
     }
 }
 
+storeDeleteSelectedBtn.addEventListener('click', () => deleteData('amazonSeller', selectedStoreIds));
+keywordDeleteSelectedBtn.addEventListener('click', () => deleteData('amazonKeywords', selectedKeywordIds));
+productDeleteSelectedBtn.addEventListener('click', () => deleteData('amazonProducts', selectedProductIds));
 
-async function deleteSelectedStores() {
-    if (selectedStoreIds.length === 0) return;
-    if (confirm(`确定要删除选中的 ${selectedStoreIds.length} 条店铺数据吗？`)) {
-        try {
-            const batch = db.batch();
-            selectedStoreIds.forEach(id => {
-                const docRef = db.collection('amazonSeller').doc(id);
-                batch.delete(docRef);
-            });
-            await batch.commit();
-            selectedStoreIds = [];
-            showNotification('批量删除成功！', 'success');
-        } catch (error) {
-            console.error("批量删除失败: ", error);
-            showNotification('批量删除失败，请检查控制台。', 'error');
-        }
-    }
-}
+// 全选/取消全选
+storeSelectAll.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    selectedStoreIds = isChecked ? filteredStoreData.map(item => item.id) : [];
+    renderStoreTable();
+});
 
-async function deleteSelectedKeywords() {
-    if (selectedKeywordIds.length === 0) return;
-    if (confirm(`确定要删除选中的 ${selectedKeywordIds.length} 条关键词数据吗？`)) {
-        try {
-            const batch = db.batch();
-            selectedKeywordIds.forEach(id => {
-                const docRef = db.collection('amazonKeywords').doc(id);
-                batch.delete(docRef);
-            });
-            await batch.commit();
-            selectedKeywordIds = [];
-            showNotification('批量删除成功！', 'success');
-        } catch (error) {
-            console.error("批量删除失败: ", error);
-            showNotification('批量删除失败，请检查控制台。', 'error');
-        }
-    }
-}
+keywordSelectAll.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    selectedKeywordIds = isChecked ? filteredKeywordData.map(item => item.id) : [];
+    renderKeywordTable();
+});
 
-async function deleteSelectedProducts() {
-    if (selectedProductIds.length === 0) return;
-    if (confirm(`确定要删除选中的 ${selectedProductIds.length} 条产品数据吗？`)) {
-        try {
-            const batch = db.batch();
-            selectedProductIds.forEach(id => {
-                const docRef = db.collection('amazonProducts').doc(id);
-                batch.delete(docRef);
-            });
-            await batch.commit();
-            selectedProductIds = [];
-            showNotification('批量删除成功！', 'success');
-        } catch (error) {
-            console.error("批量删除失败: ", error);
-            showNotification('批量删除失败，请检查控制台。', 'error');
-        }
-    }
-}
+productSelectAll.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    selectedProductIds = isChecked ? filteredProductData.map(item => item.id) : [];
+    renderProductTable();
+});
+
 
 // --- 页面切换功能 ---
 storesTab.addEventListener('click', () => {
@@ -1085,16 +1040,7 @@ productsTab.addEventListener('click', () => {
     storesView.classList.add('hidden');
     keywordsView.classList.add('hidden');
     productsView.classList.remove('hidden');
-
+    // 不需要再次获取数据，监听器会自动同步
     processProductData();
     updateSortIcon(productDateHeader, productSortDir);
 });
-
-// 初始化时自动加载数据
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        storesTab.click();
-    }
-
-});
-

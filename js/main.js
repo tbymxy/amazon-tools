@@ -662,7 +662,6 @@ function renderProductTable() {
             <td data-tooltip="${item.price || 'N/A'}">${item.price || 'N/A'}</td>
             <td data-tooltip="${item.productName || 'N/A'}">${productNameLink}</td>
             <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
-            <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
             <td data-tooltip="${date}">${date}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteProduct('${item.id}')">删除</button>
@@ -674,7 +673,7 @@ function renderProductTable() {
     productTableBody.querySelectorAll('tr').forEach(row => {
         const checkbox = row.querySelector('.product-checkbox');
         row.addEventListener('click', (e) => {
-            if (e.target.tagName.toLowerCase() === 'button') {
+            if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'input') {
                 return;
             }
             checkbox.checked = !checkbox.checked;
@@ -699,7 +698,7 @@ function renderProductTable() {
             productSelectAll.checked = selectedProductIds.length === filteredProductData.length;
         });
     });
-
+    
     productSelectAll.checked = selectedProductIds.length > 0 && selectedProductIds.length === filteredProductData.length;
 }
 
@@ -732,7 +731,7 @@ function parseCSV(text) {
     return data;
 }
 
-// --- 通用导入功能（已改进） ---
+// --- 通用文件导入功能 (修复版) ---
 /**
  * 通用文件导入函数，支持 JSON 和 CSV
  * @param {Event} event - change 事件对象
@@ -761,6 +760,8 @@ async function handleFileImport(event, collectionName, requiredKeys, successMess
                 data = JSON.parse(trimmedContent);
             } else if (fileExtension === 'csv') {
                 data = parseCSV(content);
+            } else {
+                throw new Error('不支持的文件类型。请上传 JSON 或 CSV 文件。');
             }
             
             // 修复: 确保 data 变量有效且为数组
@@ -785,16 +786,11 @@ async function handleFileImport(event, collectionName, requiredKeys, successMess
         }
     };
     
-    // 根据文件类型选择读取方式
-    if (fileExtension === 'csv') {
-        reader.readAsText(file);
-    } else if (fileExtension === 'json') {
-        reader.readAsText(file, 'UTF-8');
-    }
+    reader.readAsText(file);
 }
 
 
-// --- 导入到 Firestore 功能 ---
+// --- 导入到 Firestore 功能 (修复版) ---
 /**
  * 批量导入数据到 Firestore
  * @param {firebase.firestore.CollectionReference} collectionRef - 目标 Firestore 集合
@@ -811,47 +807,60 @@ async function importDataToFirestore(collectionRef, data) {
     
     // 增加一个日期/时间戳字段，用于排序
     const now = new Date().toISOString();
+    const uniqueRecords = new Map();
+    
+    const uniqueKey = collectionRef.id === 'amazonSeller' ? 'sellerName' : (collectionRef.id === 'amazonKeywords' ? 'keyword' : 'asin');
 
     for (let i = 0; i < data.length; i++) {
-        const docRef = collectionRef.doc();
-        const item = {
-            ...data[i],
-            createdAt: now,
-            updatedAt: now
-        };
-        batch.set(docRef, item);
-        
-        if ((i + 1) % batchSize === 0) {
-            await batch.commit();
-            console.log(`已提交批次 ${Math.floor((i + 1) / batchSize)}`);
-            batch = db.batch();
+        const record = data[i];
+        if (record[uniqueKey]) {
+            uniqueRecords.set(record[uniqueKey], record);
         }
     }
     
-    // 提交剩余的文档
-    if (batch._writeQueue.length > 0) {
-        await batch.commit();
+    // 修复: 检查 uniqueRecords 是否为空，避免对空数组进行 Firestore 查询
+    const uniqueKeysArray = Array.from(uniqueRecords.keys());
+    if (uniqueKeysArray.length === 0) {
+        showNotification('导入的数据中没有有效记录，操作取消。', 'info');
+        return;
     }
+
+    const existingDocs = await collectionRef.where(uniqueKey, 'in', uniqueKeysArray).get();
+
+    const existingDocsMap = new Map();
+    existingDocs.forEach(doc => {
+        existingDocsMap.set(doc.data()[uniqueKey], doc.id);
+    });
+
+    for (const record of Array.from(uniqueRecords.values())) {
+        const existingDocId = existingDocsMap.get(record[uniqueKey]);
+        const item = {
+            ...record,
+            createdAt: now,
+            updatedAt: now
+        };
+        if (existingDocId) {
+            batch.update(collectionRef.doc(existingDocId), item);
+        } else {
+            batch.set(collectionRef.doc(), item);
+        }
+    }
+    
+    await batch.commit();
     console.log("所有数据已成功导入。");
 }
 
-// --- 文件选择与导入按钮绑定（已改进） ---
-storeImportBtn.addEventListener('click', () => {
-    storeImportFile.click();
-});
+// --- 文件选择与导入按钮绑定（已修复） ---
+storeImportBtn.addEventListener('click', () => storeImportFile.click());
 storeImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonSeller', ['sellerName', 'site'], '店铺数据导入成功！'));
 
-keywordImportBtn.addEventListener('click', () => {
-    keywordImportFile.click();
-});
+keywordImportBtn.addEventListener('click', () => keywordImportFile.click());
 keywordImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonKeywords', ['keyword', 'site'], '关键词数据导入成功！'));
 
-productImportBtn.addEventListener('click', () => {
-    productImportFile.click();
-});
+productImportBtn.addEventListener('click', () => productImportFile.click());
 productImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonProducts', ['asin', 'site'], '产品数据导入成功！'));
 
-// --- 导出功能 ---
+// --- 导出功能 (修复版) ---
 /**
  * 导出数据为 JSON 或 CSV
  * @param {Array<Object>} data - 待导出的数据
@@ -859,19 +868,19 @@ productImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonP
  * @param {string} filename - 文件名
  */
 function exportData(data, type, filename) {
+    if (data.length === 0) {
+        showNotification('无数据可导出。', 'error');
+        return;
+    }
+    
     let content;
     let mimeType;
     if (type === 'json') {
         content = JSON.stringify(data, null, 2);
         mimeType = 'application/json';
     } else if (type === 'csv') {
-        if (data.length === 0) {
-            showNotification('无数据可导出。', 'error');
-            return;
-        }
         const headers = Object.keys(data[0]).join(',');
         const rows = data.map(item => Object.values(item).map(value => {
-            // 处理值中的逗号和引号
             const processedValue = ('' + value).replace(/"/g, '""');
             return `"${processedValue}"`;
         }).join(','));
@@ -896,17 +905,17 @@ function exportData(data, type, filename) {
 
 
 storeExportBtn.addEventListener('click', () => {
-    exportData(filteredStoreData, 'json', 'stores-data.json');
+    exportData(filteredStoreData, 'csv', 'amazon_seller.csv');
 });
 keywordExportBtn.addEventListener('click', () => {
-    exportData(filteredKeywordData, 'json', 'keywords-data.json');
+    exportData(filteredKeywordData, 'csv', 'amazon_keywords.csv');
 });
 productExportBtn.addEventListener('click', () => {
-    exportData(filteredProductData, 'json', 'products-data.json');
+    exportData(filteredProductData, 'csv', 'amazon_products.csv');
 });
 
 
-// --- 下载模板功能 ---
+// --- 下载模板功能 (修复版) ---
 function downloadTemplate(keys, filename) {
     const templateData = [{
         ...keys.reduce((acc, key) => {

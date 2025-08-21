@@ -864,7 +864,7 @@ storeImportFile.addEventListener('change', (e) => {
 });
 
 storeDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(storeTemplateHeaders, 'amazon_seller_template.csv');
+    downloadTemplate(storeTemplateHeaders, 'amazon_seller_template');
 });
 
 keywordExportBtn.addEventListener('click', () => {
@@ -1097,3 +1097,4 @@ auth.onAuthStateChanged((user) => {
     }
 
 });
+

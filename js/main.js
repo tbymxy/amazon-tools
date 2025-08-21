@@ -662,6 +662,7 @@ function renderProductTable() {
             <td data-tooltip="${item.price || 'N/A'}">${item.price || 'N/A'}</td>
             <td data-tooltip="${item.productName || 'N/A'}">${productNameLink}</td>
             <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
+            <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
             <td data-tooltip="${date}">${date}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteProduct('${item.id}')">删除</button>
@@ -741,7 +742,9 @@ function parseCSV(text) {
  */
 async function handleFileImport(event, collectionName, requiredKeys, successMessage) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        return;
+    }
 
     const fileExtension = file.name.split('.').pop().toLowerCase();
     const reader = new FileReader();
@@ -749,23 +752,27 @@ async function handleFileImport(event, collectionName, requiredKeys, successMess
     reader.onload = async (e) => {
         const content = e.target.result;
         try {
-            let data = [];
+            let data = null;
             if (fileExtension === 'json') {
-                // 修复：在解析前修剪内容以移除 BOM 等不可见字符
-                data = JSON.parse(content.trim());
+                const trimmedContent = content.trim();
+                if (!trimmedContent) {
+                    throw new Error('JSON 文件内容为空。');
+                }
+                data = JSON.parse(trimmedContent);
             } else if (fileExtension === 'csv') {
                 data = parseCSV(content);
             }
-
-            if (!Array.isArray(data)) {
+            
+            // 修复: 确保 data 变量有效且为数组
+            if (!data || !Array.isArray(data)) {
                 throw new Error('导入的数据格式不正确，期望一个数组。');
             }
-            
+
             if (data.length > 0) {
                 const firstItem = data[0];
                 const missingKeys = requiredKeys.filter(key => !(key in firstItem));
                 if (missingKeys.length > 0) {
-                    throw new Error(`JSON/CSV 数据中缺少必要的字段: ${missingKeys.join(', ')}。`);
+                    throw new Error(`数据中缺少必要的字段: ${missingKeys.join(', ')}。`);
                 }
             }
             

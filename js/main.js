@@ -792,7 +792,7 @@ async function handleFileImport(event, collectionName, requiredKeys, successMess
 
 // --- 导入到 Firestore 功能 (最终修复版) ---
 /**
- * 批量导入数据到 Firestore，支持超过 30 条记录
+ * 批量导入数据到 Firestore，支持超过 30 条记录并正确更新现有数据
  * @param {firebase.firestore.CollectionReference} collectionRef - 目标 Firestore 集合
  * @param {Array<Object>} data - 待导入的对象数组
  */
@@ -827,22 +827,30 @@ async function importDataToFirestore(collectionRef, data) {
         const existingDocs = await collectionRef.where(uniqueKey, 'in', chunk).get();
         
         existingDocs.forEach(doc => {
-            existingDocsMap.set(doc.data()[uniqueKey], doc.id);
+            existingDocsMap.set(doc.data()[uniqueKey], { id: doc.id, data: doc.data() });
         });
     }
 
     const batch = db.batch();
     for (const record of Array.from(uniqueRecords.values())) {
-        const existingDocId = existingDocsMap.get(record[uniqueKey]);
-        const item = {
-            ...record,
-            createdAt: now,
-            updatedAt: now
-        };
-        if (existingDocId) {
-            batch.update(collectionRef.doc(existingDocId), item);
+        const existingDoc = existingDocsMap.get(record[uniqueKey]);
+        
+        if (existingDoc) {
+            // 如果文档已存在，则保留原始的 createdAt，并更新其他字段
+            const updatedItem = {
+                ...existingDoc.data, // 保留原始数据
+                ...record,         // 覆盖新导入的数据
+                updatedAt: now      // 更新 updatedAt
+            };
+            batch.update(collectionRef.doc(existingDoc.id), updatedItem);
         } else {
-            batch.set(collectionRef.doc(), item);
+            // 如果文档不存在，则作为新文档添加
+            const newItem = {
+                ...record,
+                createdAt: now,
+                updatedAt: now
+            };
+            batch.set(collectionRef.doc(), newItem);
         }
     }
     

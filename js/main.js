@@ -761,46 +761,39 @@ function downloadTemplate(headers, filename) {
 }
 
 
+// --- 导入功能改进 ---
 function handleImport(file, collectionName) {
     if (!file) {
         showNotification('请选择一个文件！', 'error');
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const text = e.target.result;
-            const lines = text.split('\n');
-            const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
-            const dataToImport = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                if (lines[i].trim() === '') continue;
-                const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
-                if (values.length !== headers.length) {
-                    console.warn(`Skipping malformed row: ${lines[i]}`);
-                    continue;
-                }
-                const record = {};
-                headers.forEach((header, index) => {
-                    record[header] = values[index];
-                });
-                dataToImport.push(record);
+    // Use PapaParse to parse the CSV file
+    Papa.parse(file, {
+        header: true, // Automatically parse the first row as headers
+        skipEmptyLines: true, // Skip empty rows
+        complete: async (results) => {
+            if (results.errors.length > 0) {
+                console.error("解析错误:", results.errors);
+                showNotification('文件解析失败，请检查文件格式。', 'error');
+                return;
             }
 
+            const dataToImport = results.data;
+            
             if (dataToImport.length > 0) {
-                await importDataToFirestore(dataToImport, collectionName);
-                showNotification('数据导入成功！', 'success');
+                try {
+                    await importDataToFirestore(dataToImport, collectionName);
+                    showNotification('数据导入成功！', 'success');
+                } catch (error) {
+                    console.error("导入数据到 Firestore 失败: ", error);
+                    showNotification('数据导入失败，请稍后重试。', 'error');
+                }
             } else {
                 showNotification('文件内容为空或格式不正确。', 'error');
             }
-        } catch (error) {
-            console.error("导入文件失败: ", error);
-            showNotification('文件解析失败，请确保格式正确。', 'error');
         }
-    };
-    reader.readAsText(file);
+    });
 }
 
 async function importDataToFirestore(data, collectionName) {
@@ -1085,4 +1078,3 @@ auth.onAuthStateChanged((user) => {
     }
 
 });
-

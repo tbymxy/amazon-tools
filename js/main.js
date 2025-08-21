@@ -805,16 +805,25 @@ async function importDataToFirestore(collectionRef, data) {
     const now = new Date().toISOString();
     const uniqueRecords = new Map();
     
-    const uniqueKey = collectionRef.id === 'amazonSeller' ? 'sellerName' : (collectionRef.id === 'amazonKeywords' ? 'keyword' : 'asin');
+    // 修复: 根据不同集合使用不同的唯一键或组合键
+    let importKeys = [];
+    if (collectionRef.id === 'amazonSeller') {
+        importKeys = ['site', 'sellerId'];
+    } else if (collectionRef.id === 'amazonKeywords') {
+        importKeys = ['site', 'keyword'];
+    } else { // amazonProducts
+        importKeys = ['asin'];
+    }
 
     for (const record of data) {
-        if (record[uniqueKey]) {
-            uniqueRecords.set(record[uniqueKey], record);
+        let uniqueId = importKeys.map(key => record[key]).join('|');
+        if (uniqueId) {
+            uniqueRecords.set(uniqueId, record);
         }
     }
     
-    const uniqueKeysArray = Array.from(uniqueRecords.keys());
-    if (uniqueKeysArray.length === 0) {
+    const uniqueIdsArray = Array.from(uniqueRecords.keys());
+    if (uniqueIdsArray.length === 0) {
         showNotification('导入的数据中没有有效记录，操作取消。', 'info');
         return;
     }
@@ -822,18 +831,45 @@ async function importDataToFirestore(collectionRef, data) {
     const existingDocsMap = new Map();
     const CHUNK_SIZE = 30; // Firestore 'in' 查询的限制
     
-    for (let i = 0; i < uniqueKeysArray.length; i += CHUNK_SIZE) {
-        const chunk = uniqueKeysArray.slice(i, i + CHUNK_SIZE);
-        const existingDocs = await collectionRef.where(uniqueKey, 'in', chunk).get();
-        
-        existingDocs.forEach(doc => {
-            existingDocsMap.set(doc.data()[uniqueKey], { id: doc.id, data: doc.data() });
-        });
+    // 根据集合类型执行不同的查询策略
+    if (collectionRef.id === 'amazonProducts') {
+        const uniqueAsins = Array.from(new Set(Array.from(uniqueRecords.values()).map(rec => rec.asin)));
+        for (let i = 0; i < uniqueAsins.length; i += CHUNK_SIZE) {
+            const chunk = uniqueAsins.slice(i, i + CHUNK_SIZE);
+            const existingDocs = await collectionRef.where('asin', 'in', chunk).get();
+            existingDocs.forEach(doc => {
+                existingDocsMap.set(doc.data().asin, { id: doc.id, data: doc.data() });
+            });
+        }
+    } else { // amazonSeller and amazonKeywords (composite keys)
+        // 获取所有待导入的 site 和 sellerId/keyword
+        const uniqueSites = Array.from(new Set(Array.from(uniqueRecords.values()).map(rec => rec.site)));
+        const uniqueKeys = Array.from(new Set(Array.from(uniqueRecords.values()).map(rec => rec[importKeys[1]])));
+
+        // 查询 Firestore
+        for (let i = 0; i < uniqueSites.length; i++) {
+            const site = uniqueSites[i];
+            for (let j = 0; j < uniqueKeys.length; j += CHUNK_SIZE) {
+                const chunk = uniqueKeys.slice(j, j + CHUNK_SIZE);
+                const existingDocs = await collectionRef.where('site', '==', site).where(importKeys[1], 'in', chunk).get();
+                existingDocs.forEach(doc => {
+                    const uniqueId = `${doc.data().site}|${doc.data()[importKeys[1]]}`;
+                    existingDocsMap.set(uniqueId, { id: doc.id, data: doc.data() });
+                });
+            }
+        }
     }
 
     const batch = db.batch();
     for (const record of Array.from(uniqueRecords.values())) {
-        const existingDoc = existingDocsMap.get(record[uniqueKey]);
+        let uniqueId;
+        if (collectionRef.id === 'amazonProducts') {
+            uniqueId = record.asin;
+        } else {
+            uniqueId = importKeys.map(key => record[key]).join('|');
+        }
+        
+        const existingDoc = existingDocsMap.get(uniqueId);
         
         if (existingDoc) {
             // 如果文档已存在，则保留原始的 createdAt，并更新其他字段
@@ -860,13 +896,13 @@ async function importDataToFirestore(collectionRef, data) {
 
 // --- 文件选择与导入按钮绑定（已修复） ---
 storeImportBtn.addEventListener('click', () => storeImportFile.click());
-storeImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonSeller', ['sellerName', 'site'], '店铺数据导入成功！'));
+storeImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonSeller', ['site', 'sellerId'], '店铺数据导入成功！'));
 
 keywordImportBtn.addEventListener('click', () => keywordImportFile.click());
-keywordImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonKeywords', ['keyword', 'site'], '关键词数据导入成功！'));
+keywordImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonKeywords', ['site', 'keyword'], '关键词数据导入成功！'));
 
 productImportBtn.addEventListener('click', () => productImportFile.click());
-productImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonProducts', ['asin', 'site'], '产品数据导入成功！'));
+productImportFile.addEventListener('change', (e) => handleFileImport(e, 'amazonProducts', ['asin'], '产品数据导入成功！'));
 
 // --- 导出功能 (修复版) ---
 /**
@@ -935,11 +971,11 @@ function downloadTemplate(keys, filename) {
 }
 
 storeDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(['sellerName', 'site', 'sellerId', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals'], 'stores_template.csv');
+    downloadTemplate(['sellerId', 'site', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals'], 'stores_template.csv');
 });
 
 keywordDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(['keyword', 'keywordZh', 'site', 'url', 'count', 'date'], 'keywords_template.csv');
+    downloadTemplate(['keyword', 'site', 'keywordZh', 'url', 'count', 'date'], 'keywords_template.csv');
 });
 
 productDownloadTemplateBtn.addEventListener('click', () => {

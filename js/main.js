@@ -839,7 +839,7 @@ async function importDataToFirestore(data, collectionName) {
 
 
 storeExportBtn.addEventListener('click', () => {
-    exportToCsv(filteredStoreData, 'amazon_stores.csv');
+    exportToCsv(filteredStoreData, 'amazon_seller.csv');
 });
 
 storeImportBtn.addEventListener('click', () => {
@@ -852,7 +852,7 @@ storeImportFile.addEventListener('change', (e) => {
 });
 
 storeDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(storeTemplateHeaders, 'amazon_stores_template.csv');
+    downloadTemplate(storeTemplateHeaders, 'amazon_seller_template.csv');
 });
 
 keywordExportBtn.addEventListener('click', () => {
@@ -1085,3 +1085,4 @@ auth.onAuthStateChanged((user) => {
     }
 
 });
+

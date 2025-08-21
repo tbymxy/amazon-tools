@@ -394,6 +394,7 @@ body {
 }
 
 /* 新增产品图片样式 */
+/* 小图容器 */
 .product-image-container {
     position: relative;
     display: inline-block;
@@ -402,35 +403,61 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
-    cursor: pointer;
+    cursor: zoom-in;
 }
 
+/* 小缩略图 */
 .product-image-thumb {
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-/* 修改后的代码 */
+/* 大图样式 */
 .product-image-large {
-    position: fixed; /* 使用 fixed 定位，使其相对于视口而不是父元素 */
+    position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.8); /* 初始缩放至80%，并居中 */
+    transform: translate(-50%, -50%) scale(0.8);
     opacity: 0;
     pointer-events: none;
-    max-width: 90vw; /* 限制最大宽度为视口宽度的90% */
-    max-height: 90vh; /* 限制最大高度为视口高度的90% */
+    max-width: 90vw;
+    max-height: 90vh;
     height: auto;
-    z-index: 9999; /* 确保它在最顶层 */
+    z-index: 10000;
     border: 2px solid var(--primary-color);
     border-radius: var(--border-radius-base);
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    background: #fff;
     transition: transform 0.3s ease, opacity 0.3s ease;
+    will-change: transform, opacity;
+    cursor: zoom-out;
 }
 
-.product-image-container:hover .product-image-large {
-    transform: translate(-50%, -50%) scale(1); /* 悬停时恢复为100%比例并保持居中 */
+/* 背景遮罩 */
+.product-image-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+/* 悬停或聚焦时显示大图和遮罩 */
+.product-image-container:hover .product-image-large,
+.product-image-container:focus-within .product-image-large {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.product-image-container:hover .product-image-overlay,
+.product-image-container:focus-within .product-image-overlay {
     opacity: 1;
     pointer-events: auto;
 }

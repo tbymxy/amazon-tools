@@ -707,63 +707,75 @@ function renderProductTable() {
     productSelectAll.checked = selectedProductIds.length > 0 && selectedProductIds.length === filteredProductData.length;
 }
 
-// --- 导入导出功能 ---
-function exportToCsv(data, filename) {
+// --- 导入导出功能 (适配 JSON 格式) ---
+
+/**
+ * 将数据导出为 JSON 文件
+ * @param {Array<Object>} data 要导出的数据对象数组
+ * @param {string} filename 导出的文件名
+ */
+function exportToJson(data, filename) {
     if (data.length === 0) {
         showNotification('没有数据可供导出！', 'error');
         return;
     }
+
+    // 将数据对象数组转换为格式化的 JSON 字符串
+    const jsonString = JSON.stringify(data, null, 2);
+
+    // 创建 Blob 对象，MIME 类型为 application/json
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
     
-    const headers = Object.keys(data[0]);
-    const csvRows = [];
-    csvRows.push(headers.join(','));
-
-    for (const item of data) {
-        const values = headers.map(header => {
-            const value = item[header] || '';
-            // Escape special characters in CSV
-            const escaped = ('' + value).replace(/"/g, '""');
-            return `"${escaped}"`;
-        });
-        csvRows.push(values.join(','));
-    }
-
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // 创建下载链接并触发点击
     link.href = URL.createObjectURL(blob);
-    link.download = filename;
+    link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
 
-// 模板文件下载函数
-const storeTemplateHeaders = ['site', 'sellerId', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals', 'url'];
-const keywordTemplateHeaders = ['site', 'keyword', 'keywordZh', 'count', 'date', 'url'];
-const productTemplateHeaders = ['site', 'asin', 'mainImageURL', 'price', 'productName', 'productNameZh', 'createdAt', 'url'];
-
+/**
+ * 下载 JSON 模板文件
+ * @param {Array<string>} headers 模板文件的键名数组
+ * @param {string} filename 模板文件名
+ */
 function downloadTemplate(headers, filename) {
-    const csvRows = [];
-    csvRows.push(headers.join(','));
-    csvRows.push(headers.map(() => '').join(',')); // Add an empty line for the template
+    const templateData = {};
+    headers.forEach(header => {
+        templateData[header] = "";
+    });
 
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const templateJson = JSON.stringify([templateData], null, 2);
+    
+    // 创建 Blob 对象，MIME 类型为 application/json
+    const blob = new Blob([templateJson], { type: 'application/json;charset=utf-8;' });
     const link = document.createElement('a');
+    
+    // 创建下载链接并触发点击
     link.href = URL.createObjectURL(blob);
-    link.download = filename;
+    link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
 
-
+/**
+ * 处理 JSON 文件的导入
+ * @param {File} file 用户选择的文件对象
+ * @param {string} collectionName 要导入的 Firestore 集合名
+ */
 function handleImport(file, collectionName) {
     if (!file) {
         showNotification('请选择一个文件！', 'error');
+        return;
+    }
+
+    // 检查文件类型，确保是 JSON
+    if (file.type !== 'application/json') {
+        showNotification('请选择一个 JSON 文件！', 'error');
         return;
     }
 
@@ -771,44 +783,44 @@ function handleImport(file, collectionName) {
     reader.onload = async (e) => {
         try {
             const text = e.target.result;
-            const lines = text.split('\n');
-            const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
-            const dataToImport = [];
+            // 直接解析 JSON 字符串
+            const dataToImport = JSON.parse(text);
 
-            for (let i = 1; i < lines.length; i++) {
-                if (lines[i].trim() === '') continue;
-                const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
-                if (values.length !== headers.length) {
-                    console.warn(`Skipping malformed row: ${lines[i]}`);
-                    continue;
-                }
-                const record = {};
-                headers.forEach((header, index) => {
-                    record[header] = values[index];
-                });
-                dataToImport.push(record);
-            }
-
-            if (dataToImport.length > 0) {
-                await importDataToFirestore(dataToImport, collectionName);
-                showNotification('数据导入成功！', 'success');
-            } else {
+            if (!Array.isArray(dataToImport) || dataToImport.length === 0) {
                 showNotification('文件内容为空或格式不正确。', 'error');
+                return;
             }
+
+            // 检查每个对象是否都是有效的键值对
+            const isValidData = dataToImport.every(item => typeof item === 'object' && item !== null);
+            if (!isValidData) {
+                showNotification('文件内容格式不正确，应为 JSON 对象数组。', 'error');
+                return;
+            }
+            
+            // 导入数据到 Firestore
+            await importDataToFirestore(dataToImport, collectionName);
+            showNotification('数据导入成功！', 'success');
+
         } catch (error) {
             console.error("导入文件失败: ", error);
-            showNotification('文件解析失败，请确保格式正确。', 'error');
+            showNotification('文件解析失败，请确保是有效的 JSON 格式。', 'error');
         }
     };
     reader.readAsText(file);
 }
 
+// 模板文件下载的键名数组（与业务逻辑相关，保持不变）
+const storeTemplateHeaders = ['site', 'sellerId', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals', 'url'];
+const keywordTemplateHeaders = ['site', 'keyword', 'keywordZh', 'count', 'date', 'url'];
+const productTemplateHeaders = ['site', 'asin', 'mainImageURL', 'price', 'productName', 'productNameZh', 'createdAt', 'url'];
+
+// 以下函数无需修改，因为它们处理的是数据对象，与文件格式无关
 async function importDataToFirestore(data, collectionName) {
     const batch = db.batch();
     const collectionRef = db.collection(collectionName);
     const uniqueRecords = new Map();
 
-    // Find a suitable unique identifier. Assuming `sellerName` for stores, `keyword` for keywords, and `asin` for products.
     const uniqueKey = collectionName === 'amazonSeller' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
 
     for (const record of data) {

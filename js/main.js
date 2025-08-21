@@ -768,33 +768,59 @@ function handleImport(file, collectionName) {
         return;
     }
 
-    // Use PapaParse to parse the CSV file
-    Papa.parse(file, {
-        header: true, // Automatically parse the first row as headers
-        skipEmptyLines: true, // Skip empty rows
-        complete: async (results) => {
-            if (results.errors.length > 0) {
-                console.error("解析错误:", results.errors);
-                showNotification('文件解析失败，请检查文件格式。', 'error');
-                return;
-            }
+    const reader = new FileReader();
 
-            const dataToImport = results.data;
+    reader.onload = (e) => {
+        try {
+            const text = e.target.result;
             
-            if (dataToImport.length > 0) {
-                try {
-                    await importDataToFirestore(dataToImport, collectionName);
-                    showNotification('数据导入成功！', 'success');
-                } catch (error) {
-                    console.error("导入数据到 Firestore 失败: ", error);
-                    showNotification('数据导入失败，请稍后重试。', 'error');
+            // PapaParse 自动处理大部分格式问题，但明确指定编码是关键
+            Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    // 如果 PapaParse 发现任何解析错误，直接返回
+                    if (results.errors.length > 0) {
+                        console.error("解析错误:", results.errors);
+                        showNotification('文件解析失败，请确保格式正确且为UTF-8编码。', 'error');
+                        return;
+                    }
+                    
+                    const dataToImport = results.data;
+
+                    if (dataToImport.length > 0) {
+                        // 额外的数据验证
+                        const uniqueKey = collectionName === 'amazonSeller' ? 'sellerName' : (collectionName === 'amazonKeywords' ? 'keyword' : 'asin');
+                        const validData = dataToImport.filter(record => record[uniqueKey] && record[uniqueKey].trim() !== '');
+
+                        if (validData.length === 0) {
+                            showNotification('文件内容为空或缺少唯一标识符。', 'error');
+                            return;
+                        }
+
+                        try {
+                            await importDataToFirestore(validData, collectionName);
+                            showNotification(`成功导入 ${validData.length} 条数据！`, 'success');
+                        } catch (error) {
+                            console.error("导入数据到 Firestore 失败: ", error);
+                            showNotification('数据导入失败，请稍后重试。', 'error');
+                        }
+                    } else {
+                        showNotification('文件内容为空。', 'error');
+                    }
                 }
-            } else {
-                showNotification('文件内容为空或格式不正确。', 'error');
-            }
+            });
+
+        } catch (error) {
+            console.error("文件读取失败: ", error);
+            showNotification('文件读取失败，请稍后重试。', 'error');
         }
-    });
+    };
+    
+    // 使用 UTF-8 编码读取文件。如果用户确认他们的文件是其他编码，可以考虑提供一个下拉菜单让他们选择。
+    reader.readAsText(file, 'UTF-8');
 }
+
 
 async function importDataToFirestore(data, collectionName) {
     const batch = db.batch();

@@ -790,9 +790,9 @@ async function handleFileImport(event, collectionName, requiredKeys, successMess
 }
 
 
-// --- 导入到 Firestore 功能 (修复版) ---
+// --- 导入到 Firestore 功能 (最终修复版) ---
 /**
- * 批量导入数据到 Firestore
+ * 批量导入数据到 Firestore，支持超过 30 条记录
  * @param {firebase.firestore.CollectionReference} collectionRef - 目标 Firestore 集合
  * @param {Array<Object>} data - 待导入的对象数组
  */
@@ -802,36 +802,36 @@ async function importDataToFirestore(collectionRef, data) {
         return;
     }
 
-    const batch = db.batch();
-    const batchSize = 500;
-    
-    // 增加一个日期/时间戳字段，用于排序
     const now = new Date().toISOString();
     const uniqueRecords = new Map();
     
     const uniqueKey = collectionRef.id === 'amazonSeller' ? 'sellerName' : (collectionRef.id === 'amazonKeywords' ? 'keyword' : 'asin');
 
-    for (let i = 0; i < data.length; i++) {
-        const record = data[i];
+    for (const record of data) {
         if (record[uniqueKey]) {
             uniqueRecords.set(record[uniqueKey], record);
         }
     }
     
-    // 修复: 检查 uniqueRecords 是否为空，避免对空数组进行 Firestore 查询
     const uniqueKeysArray = Array.from(uniqueRecords.keys());
     if (uniqueKeysArray.length === 0) {
         showNotification('导入的数据中没有有效记录，操作取消。', 'info');
         return;
     }
-
-    const existingDocs = await collectionRef.where(uniqueKey, 'in', uniqueKeysArray).get();
-
+    
     const existingDocsMap = new Map();
-    existingDocs.forEach(doc => {
-        existingDocsMap.set(doc.data()[uniqueKey], doc.id);
-    });
+    const CHUNK_SIZE = 30; // Firestore 'in' 查询的限制
+    
+    for (let i = 0; i < uniqueKeysArray.length; i += CHUNK_SIZE) {
+        const chunk = uniqueKeysArray.slice(i, i + CHUNK_SIZE);
+        const existingDocs = await collectionRef.where(uniqueKey, 'in', chunk).get();
+        
+        existingDocs.forEach(doc => {
+            existingDocsMap.set(doc.data()[uniqueKey], doc.id);
+        });
+    }
 
+    const batch = db.batch();
     for (const record of Array.from(uniqueRecords.values())) {
         const existingDocId = existingDocsMap.get(record[uniqueKey]);
         const item = {

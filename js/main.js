@@ -499,7 +499,7 @@ function renderStoreTable() {
             <td data-tooltip="${item.feedback || 'N/A'}">${item.feedback || 'N/A'}</td>
             <td data-tooltip="${item.rating || 'N/A'}">${item.rating || 'N/A'}</td>
             <td data-tooltip="${item.reviews || 'N/A'}">${item.reviews || 'N/A'}</td>
-            <td data-tooltip="${item.Featured || 'N/A'}">${item.Featured || 'N/A'}</td>
+            <td data-tooltip="${item.BestSellers || 'N/A'}">${item.BestSellers || 'N/A'}</td>
             <td data-tooltip="${item.NewestArrivals || 'N/A'}">${item.NewestArrivals || 'N/A'}</td>
             <td>
                 <button class="btn secondary-btn" onclick="deleteStore('${item.id}')">删除</button>
@@ -971,7 +971,7 @@ function downloadTemplate(keys, filename) {
 }
 
 storeDownloadTemplateBtn.addEventListener('click', () => {
-    downloadTemplate(['sellerId', 'site', 'sellerName', 'feedback', 'rating', 'reviews', 'Featured', 'NewestArrivals'], 'stores_template.csv');
+    downloadTemplate(['sellerId', 'site', 'sellerName', 'feedback', 'rating', 'reviews', 'BestSellers', 'NewestArrivals'], 'stores_template.csv');
 });
 
 keywordDownloadTemplateBtn.addEventListener('click', () => {

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon 数据管理</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="icon" type="image/png" sizes="16x16" href="icon16.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icon48.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="icon128.png">
+</head>
+<body>
+    <div id="notification-container" class="notification-container"></div>
+
+    <div id="auth-container" class="auth-card">
+        <h2>请登录</h2>
+        <form id="login-form">
+            <input type="email" id="login-email" placeholder="邮箱" required>
+            <input type="password" id="login-password" placeholder="密码" required>
+            <button type="submit" class="btn primary-btn">登录</button>
+            <p id="auth-error" class="error-msg"></p>
+        </form>
+    </div>
+
+    <div id="main-container" class="hidden">
+        <header class="app-header">
+            <div class="header-left">
+                <span class="app-title">Amazon 数据</span>
+                <div class="tabs">
+                    <button id="stores-tab" class="active tab-btn">店铺数据</button>
+                    <button id="keywords-tab" class="tab-btn">关键词数据</button>
+                    <button id="products-tab" class="tab-btn">产品数据</button>
+                    <button id="bestsellers-tab" class="tab-btn">Best Sellers</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="logout-btn" class="btn secondary-btn">退出登录</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div id="loading-skeleton" class="card">
+                <div style="height: 30px; width: 250px; margin-bottom: 20px;" class="skeleton-loader"></div>
+                <div style="height: 36px; width: 100%; margin-bottom: 20px;" class="skeleton-loader"></div>
+                <div class="table-wrapper">
+                    <div style="height: 40px; background-color: #e0e0e0;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                    <div class="skeleton-table-row skeleton-loader" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <div id="stores-view" class="view-container card hidden">
+                <div class="card-header">
+                    <div class="header-left-actions">
+                        <h2>店铺数据</h2>
+                        <span class="stats-bar">
+                            总计: <span id="store-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="store-search-input" class="search-input" placeholder="搜索店铺名...">
+                        <input type="file" id="store-import-file" class="hidden-file-input" accept=".csv, .json">
+                        <button id="store-import-btn" class="btn secondary-btn">导入</button>
+                        <button id="store-download-template-btn" class="btn secondary-btn">下载模板</button>
+                        <button id="store-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="store-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
+                </div>
+                <div id="store-filters" class="site-filters"></div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="store-select-all"></th>
+                                <th>序号</th>
+                                <th>站点</th>
+                                <th>店铺名</th>
+                                <th>Feedback</th>
+                                <th id="rating-header" data-sort-key="rating">Rating <span class="sort-icon" data-sort-dir="desc"></span></th>
+                                <th>Reviews</th>
+                                <th>BestSellers</th>
+                                <th>NewestArrivals</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="store-table-body">
+                            </tbody>
+                    </table>
+                    <p id="stores-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+            </div>
+
+            <div id="keywords-view" class="view-container card hidden">
+                <div class="card-header">
+                    <div class="header-left-actions">
+                        <h2>关键词数据</h2>
+                        <span class="stats-bar">
+                            总计: <span id="keyword-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="keyword-search-input" class="search-input" placeholder="搜索关键词...">
+                        <input type="file" id="keyword-import-file" class="hidden-file-input" accept=".csv, .json">
+                        <button id="keyword-import-btn" class="btn secondary-btn">导入</button>
+                        <button id="keyword-download-template-btn" class="btn secondary-btn">下载模板</button>
+                        <button id="keyword-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="keyword-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
+                </div>
+                <div id="keyword-filters" class="site-filters"></div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="keyword-select-all"></th>
+                                <th>序号</th>
+                                <th>站点</th>
+                                <th>关键词</th>
+                                <th>中文关键词</th> <th>结果数</th>
+                                <th id="keyword-date-header" data-sort-key="date">采集日期 <span class="sort-icon" data-sort-dir="desc"></span></th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keyword-table-body">
+                            </tbody>
+                    </table>
+                    <p id="keywords-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+            </div>
+            
+            <div id="products-view" class="view-container card hidden">
+                <div class="card-header">
+                    <div class="header-left-actions">
+                        <h2>产品数据</h2>
+                        <span class="stats-bar">
+                            总计: <span id="product-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="product-search-input" class="search-input" placeholder="搜索产品名/ASIN...">
+                        <input type="file" id="product-import-file" class="hidden-file-input" accept=".csv, .json">
+                        <button id="product-import-btn" class="btn secondary-btn">导入</button>
+                        <button id="product-download-template-btn" class="btn secondary-btn">下载模板</button>
+                        <button id="product-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="product-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
+                </div>
+                <div id="product-filters" class="site-filters"></div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="product-select-all"></th>
+                                <th>序号</th>
+                                <th>站点</th>
+                                <th>ASIN</th>
+                                <th>图片</th>
+                                <th>价格</th>
+                                <th>产品名称</th>
+                                <th>中文名称</th>
+                                <th id="product-date-header" data-sort-key="createdAt">日期 <span class="sort-icon" data-sort-dir="desc"></span></th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body">
+                        </tbody>
+                    </table>
+                    <p id="products-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+            </div>
+
+            <!-- New Best Sellers View -->
+            <div id="bestsellers-view" class="view-container card hidden">
+                <div class="card-header">
+                    <div class="header-left-actions">
+                        <h2>Best Sellers</h2>
+                        <span class="stats-bar">
+                            总计: <span id="bestseller-count">0</span>
+                        </span>
+                    </div>
+                    <div class="header-right-actions">
+                        <input type="text" id="bestseller-search-input" class="search-input" placeholder="搜索类目/子类目...">
+                        <button id="bestseller-export-btn" class="btn secondary-btn">导出</button>
+                        <button id="bestseller-delete-selected-btn" class="btn secondary-btn" disabled>删除选中项</button>
+                    </div>
+                </div>
+                <div id="bestseller-filters" class="site-filters"></div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="bestseller-select-all"></th>
+                                <th>序号</th>
+                                <th>站点</th>
+                                <th>一级类目</th>
+                                <th>中文一级类目</th>
+                                <th>子类目</th>
+                                <th>中文子类目</th>
+                                <th id="bestseller-date-header" data-sort-key="createdAt">日期 <span class="sort-icon" data-sort-dir="desc"></span></th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bestseller-table-body">
+                        </tbody>
+                    </table>
+                    <p id="bestsellers-no-data" class="no-data hidden">暂无数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+
+</html>

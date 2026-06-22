@@ -299,25 +299,41 @@ body {
     background-color: #ffe8cc; /* 选中后 hover 的颜色 */
 }
 
-/* Column widths */
-.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 50px; } 
-.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 50px; }
-.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 80px; } 
-.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 15%; }  
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 10%; }  
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 8%; }  
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 10%; }  
-.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 8%; }  
-.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 12%; } 
-.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 100px; } 
+/* 通用列宽 - 针对 FBM/FBA 店铺表格 (10列) */
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 40px; }  /* checkbox */
+.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 50px; }  /* 序号 */
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 60px; }  /* 站点 */
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 18%; }  /* 店铺名 */
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 10%; }  /* Feedback */
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 8%; }   /* Rating */
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 10%; }  /* Reviews */
+.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 10%; }  /* BestSellers */
+.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 12%; }  /* NewestArrivals */
+.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 80px; } /* 操作 */
 
-/* 新增产品数据表格列宽 */
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 80px; } /* 图片 */
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 8%; }  /* 价格 */
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 15%; } /* 产品名称 */
-.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 15%; } /* 中文名称 */
-.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 100px; } /* 日期 */
-.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 100px; } /* 操作 */
+/* 关键词数据列宽 (7列) - 覆盖通用规则 */
+.view-container#keywords-view .data-table th:nth-child(4),
+.view-container#keywords-view .data-table td:nth-child(4) { width: 45%; } /* 关键词 */
+.view-container#keywords-view .data-table th:nth-child(5),
+.view-container#keywords-view .data-table td:nth-child(5) { width: 10%; } /* 结果数 */
+.view-container#keywords-view .data-table th:nth-child(6),
+.view-container#keywords-view .data-table td:nth-child(6) { width: 15%; } /* 采集日期 */
+.view-container#keywords-view .data-table th:nth-child(7),
+.view-container#keywords-view .data-table td:nth-child(7) { width: 80px; } /* 操作 */
+
+/* 产品数据表格列宽 (9列) - 覆盖通用规则 */
+.view-container#products-view .data-table th:nth-child(4),
+.view-container#products-view .data-table td:nth-child(4) { width: 12%; } /* ASIN */
+.view-container#products-view .data-table th:nth-child(5),
+.view-container#products-view .data-table td:nth-child(5) { width: 70px; } /* 图片 */
+.view-container#products-view .data-table th:nth-child(6),
+.view-container#products-view .data-table td:nth-child(6) { width: 8%; }  /* 价格 */
+.view-container#products-view .data-table th:nth-child(7),
+.view-container#products-view .data-table td:nth-child(7) { width: 35%; } /* 产品名称 */
+.view-container#products-view .data-table th:nth-child(8),
+.view-container#products-view .data-table td:nth-child(8) { width: 110px; } /* 日期 */
+.view-container#products-view .data-table th:nth-child(9),
+.view-container#products-view .data-table td:nth-child(9) { width: 80px; } /* 操作 */
 
 .data-table th .sort-icon {
     font-size: 12px;
@@ -559,31 +575,35 @@ body {
     }
 }
 
-/* ========== Added for Best Sellers layout ========== */
-/* 提高表格最小宽度以容纳更多列 */
+/* ========== 各视图列宽优化 ========== */
+/* 提高表格最小宽度 */
 .data-table {
-    min-width: 1000px; /* 原来 800px -> 提升以适配 Best Sellers 的列数 */
+    min-width: 1000px;
 }
 
-/* Best Sellers 列宽（追加到文件末尾以覆盖前面的 nth-child 规则） */
-/* 列顺序：1 checkbox, 2 序号, 3 站点, 4 一级类目, 5 中文一级类目,
-            6 子类目, 7 中文子类目, 8 日期, 9 操作 */
-.data-table th:nth-child(1), .data-table td:nth-child(1)  { width: 40px; }  /* checkbox */
-.data-table th:nth-child(2), .data-table td:nth-child(2)  { width: 50px; }  /* 序号 */
-.data-table th:nth-child(3), .data-table td:nth-child(3)  { width: 60px; }  /* 站点 */
-.data-table th:nth-child(4), .data-table td:nth-child(4)  { width: 18%; }   /* 一级类目 */
-.data-table th:nth-child(5), .data-table td:nth-child(5)  { width: 15%; }   /* 中文一级类目 */
-.data-table th:nth-child(6), .data-table td:nth-child(6)  { width: 15%; }   /* 子类目 */
-.data-table th:nth-child(7), .data-table td:nth-child(7)  { width: 15%; }   /* 中文子类目 */
-.data-table th:nth-child(8), .data-table td:nth-child(8)  { width: 12%; }   /* 日期 */
-.data-table th:nth-child(9), .data-table td:nth-child(9)  { width: 100px; } /* 操作 */
+/* Best Sellers 列宽（移除中文列后重新调整，共7列） */
+/* 列顺序：1 checkbox, 2 序号, 3 站点, 4 一级类目, 5 子类目, 6 日期, 7 操作 */
+.view-container#bestsellers-view .data-table th:nth-child(1),
+.view-container#bestsellers-view .data-table td:nth-child(1)  { width: 40px; }  /* checkbox */
+.view-container#bestsellers-view .data-table th:nth-child(2),
+.view-container#bestsellers-view .data-table td:nth-child(2)  { width: 50px; }  /* 序号 */
+.view-container#bestsellers-view .data-table th:nth-child(3),
+.view-container#bestsellers-view .data-table td:nth-child(3)  { width: 60px; }  /* 站点 */
+.view-container#bestsellers-view .data-table th:nth-child(4),
+.view-container#bestsellers-view .data-table td:nth-child(4)  { width: 28%; }   /* 一级类目 */
+.view-container#bestsellers-view .data-table th:nth-child(5),
+.view-container#bestsellers-view .data-table td:nth-child(5)  { width: 35%; }   /* 子类目 */
+.view-container#bestsellers-view .data-table th:nth-child(6),
+.view-container#bestsellers-view .data-table td:nth-child(6)  { width: 13%; }   /* 日期 */
+.view-container#bestsellers-view .data-table th:nth-child(7),
+.view-container#bestsellers-view .data-table td:nth-child(7)  { width: 80px; } /* 操作 */
 
-/* 在窄屏时，允许 Best Sellers 表格更好地换行显示（保留原有响应式规则） */
+/* 在窄屏时，允许表格更好地换行显示 */
 @media (max-width: 768px) {
-    .data-table th:nth-child(4), .data-table td:nth-child(4),
-    .data-table th:nth-child(5), .data-table td:nth-child(5),
-    .data-table th:nth-child(6), .data-table td:nth-child(6),
-    .data-table th:nth-child(7), .data-table td:nth-child(7) {
+    .view-container#bestsellers-view .data-table th:nth-child(4),
+    .view-container#bestsellers-view .data-table td:nth-child(4),
+    .view-container#bestsellers-view .data-table th:nth-child(5),
+    .view-container#bestsellers-view .data-table td:nth-child(5) {
         width: auto;
         white-space: normal;
     }

@@ -203,9 +203,7 @@ function escapeHtml(str) {
 function resolveBestsellerUrl(item, col) {
     const lookup = {
         category1: ['category1Url', 'categoryUrl', 'url', 'link'],
-        category1Zh: ['category1ZhUrl', 'category1Url', 'categoryUrl', 'url', 'link'],
-        subcategory: ['subcategoryUrl', 'subCategoryUrl', 'url', 'link'],
-        subcategoryZh: ['subcategoryZhUrl', 'subcategoryUrl', 'url', 'link']
+        subcategory: ['subcategoryUrl', 'subCategoryUrl', 'url', 'link']
     };
     const candidates = lookup[col] || ['url', 'link'];
     for (const c of candidates) {
@@ -405,7 +403,7 @@ function getFilteredSortedKeywords() {
     const searchTerm = (keywordSearchInput.value || '').toLowerCase();
     const arr = Array.from(keywordData.values()).filter(item => {
         const siteMatch = activeKeywordSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeKeywordSiteFilter;
-        const searchMatch = !searchTerm || (item.keyword && item.keyword.toLowerCase().includes(searchTerm)) || (item.keywordZh && item.keywordZh.toLowerCase().includes(searchTerm));
+        const searchMatch = !searchTerm || (item.keyword && item.keyword.toLowerCase().includes(searchTerm));
         return siteMatch && searchMatch;
     });
     arr.sort((a, b) => {
@@ -424,7 +422,6 @@ function getFilteredSortedProducts() {
         const siteMatch = activeProductSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeProductSiteFilter;
         const searchMatch = !searchTerm ||
             (item.productName && item.productName.toLowerCase().includes(searchTerm)) ||
-            (item.productNameZh && item.productNameZh.toLowerCase().includes(searchTerm)) ||
             (item.asin && item.asin.toLowerCase().includes(searchTerm));
         return siteMatch && searchMatch;
     });
@@ -444,9 +441,7 @@ function getFilteredSortedBestsellers() {
         const siteMatch = activeBestsellerSiteFilter === 'all' || getSiteAbbreviation(item.site) === activeBestsellerSiteFilter;
         const searchMatch = !searchTerm ||
             (item.category1 && item.category1.toLowerCase().includes(searchTerm)) ||
-            (item.category1Zh && item.category1Zh.toLowerCase().includes(searchTerm)) ||
-            (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm)) ||
-            (item.subcategoryZh && item.subcategoryZh.toLowerCase().includes(searchTerm));
+            (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm));
         return siteMatch && searchMatch;
     });
     arr.sort((a, b) => {
@@ -741,7 +736,6 @@ function renderKeywordRow(item, index) {
     const date = item.date || 'N/A';
     const hasUrl = keywordUrl !== '#';
     const keywordLink = hasUrl ? `<a href="${keywordUrl}" target="_blank" rel="noreferrer noopener">${item.keyword || 'N/A'}</a>` : (item.keyword || 'N/A');
-    const keywordZhLink = hasUrl ? `<a href="${keywordUrl}" target="_blank" rel="noreferrer noopener">${item.keywordZh || 'N/A'}</a>` : (item.keywordZh || 'N/A');
     const countLink = hasUrl ? `<a href="${keywordUrl}" target="_blank" rel="noreferrer noopener">${item.count || 'N/A'}</a>` : (item.count || 'N/A');
 
     tr.innerHTML = `
@@ -749,7 +743,6 @@ function renderKeywordRow(item, index) {
         <td>${index + 1}</td>
         <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
         <td data-tooltip="${item.keyword || 'N/A'}">${keywordLink}</td>
-        <td data-tooltip="${item.keywordZh || 'N/A'}">${keywordZhLink}</td>
         <td data-tooltip="${item.count || 'N/A'}">${countLink}</td>
         <td data-tooltip="${date}">${date}</td>
         <td><button class="btn secondary-btn delete-keyword-btn" data-id="${item.id}">删除</button></td>
@@ -766,7 +759,6 @@ function renderProductRow(item, index) {
     const hasUrl = productUrl !== '#';
     const asinLink = hasUrl ? `<a href="${productUrl}" target="_blank" rel="noreferrer noopener">${item.asin || 'N/A'}</a>` : (item.asin || 'N/A');
     const productNameLink = hasUrl ? `<a href="${productUrl}" target="_blank" rel="noreferrer noopener">${item.productName || 'N/A'}</a>` : (item.productName || 'N/A');
-    const productNameZhLink = hasUrl ? `<a href="${productUrl}" target="_blank" rel="noreferrer noopener">${item.productNameZh || 'N/A'}</a>` : (item.productNameZh || 'N/A');
     const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A';
     const imageHtml = item.mainImageURL ? `
         <div class="product-image-container">
@@ -781,7 +773,6 @@ function renderProductRow(item, index) {
         <td>${imageHtml}</td>
         <td data-tooltip="${item.price || 'N/A'}">${item.price || 'N/A'}</td>
         <td data-tooltip="${item.productName || 'N/A'}">${productNameLink}</td>
-        <td data-tooltip="${item.productNameZh || 'N/A'}">${productNameZhLink}</td>
         <td data-tooltip="${date}">${date}</td>
         <td><button class="btn secondary-btn delete-product-btn" data-id="${item.id}">删除</button></td>
     `;
@@ -796,28 +787,20 @@ function renderBestsellerRow(item, index) {
     const date = item.createdAt ? (new Date(item.createdAt)).toLocaleDateString() : 'N/A';
 
     const urlCategory1 = resolveBestsellerUrl(item, 'category1');
-    const urlCategory1Zh = resolveBestsellerUrl(item, 'category1Zh');
     const urlSubcategory = resolveBestsellerUrl(item, 'subcategory');
-    const urlSubcategoryZh = resolveBestsellerUrl(item, 'subcategoryZh');
 
     const cat1Text = escapeHtml(item.category1 || 'N/A');
-    const cat1ZhText = escapeHtml(item.category1Zh || 'N/A');
     const subText = escapeHtml(item.subcategory || 'N/A');
-    const subZhText = escapeHtml(item.subcategoryZh || 'N/A');
 
     const cat1Link = urlCategory1 && urlCategory1 !== '#' ? `<a href="${urlCategory1}" target="_blank" rel="noreferrer noopener">${cat1Text}</a>` : cat1Text;
-    const cat1ZhLink = urlCategory1Zh && urlCategory1Zh !== '#' ? `<a href="${urlCategory1Zh}" target="_blank" rel="noreferrer noopener">${cat1ZhText}</a>` : cat1ZhText;
     const subLink = urlSubcategory && urlSubcategory !== '#' ? `<a href="${urlSubcategory}" target="_blank" rel="noreferrer noopener">${subText}</a>` : subText;
-    const subZhLink = urlSubcategoryZh && urlSubcategoryZh !== '#' ? `<a href="${urlSubcategoryZh}" target="_blank" rel="noreferrer noopener">${subZhText}</a>` : subZhText;
 
     tr.innerHTML = `
         <td><input type="checkbox" class="bestseller-checkbox" data-id="${item.id}" ${selectedBestsellerIds.has(item.id) ? 'checked' : ''}></td>
         <td>${index + 1}</td>
         <td data-tooltip="${item.site || 'N/A'}">${getSiteAbbreviation(item.site) || 'N/A'}</td>
         <td data-tooltip="${item.category1 || 'N/A'}">${cat1Link}</td>
-        <td data-tooltip="${item.category1Zh || 'N/A'}">${cat1ZhLink}</td>
         <td data-tooltip="${item.subcategory || 'N/A'}">${subLink}</td>
-        <td data-tooltip="${item.subcategoryZh || 'N/A'}">${subZhLink}</td>
         <td data-tooltip="${date}">${date}</td>
         <td><button class="btn secondary-btn delete-bestseller-btn" data-id="${item.id}">删除</button></td>
     `;
@@ -1257,8 +1240,8 @@ function downloadTemplate(keys, filename) {
 
 fbmStoreDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['sellerId', 'site', 'sellerName', 'feedback', 'rating', 'reviews', 'BestSellers', 'NewestArrivals'], 'fbm_stores_template.csv'));
 fbaStoreDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['sellerId', 'site', 'sellerName', 'feedback', 'rating', 'reviews', 'BestSellers', 'NewestArrivals'], 'fba_stores_template.csv'));
-keywordDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['keyword', 'site', 'keywordZh', 'url', 'count', 'date'], 'keywords_template.csv'));
-productDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['asin', 'site', 'productName', 'productNameZh', 'price', 'mainImageURL'], 'products_template.csv'));
+keywordDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['keyword', 'site', 'url', 'count', 'date'], 'keywords_template.csv'));
+productDownloadTemplateBtn.addEventListener('click', () => downloadTemplate(['asin', 'site', 'productName', 'price', 'mainImageURL'], 'products_template.csv'));
 
 // === 删除 ===
 async function deleteData(collectionName, ids) {

@@ -127,7 +127,7 @@ let fbmStoreSortKey = 'rating';
 let fbmStoreSortDir = 'desc';
 let fbaStoreSortKey = 'rating';
 let fbaStoreSortDir = 'desc';
-let keywordSortKey = 'date';
+let keywordSortKey = 'createdAt';
 let keywordSortDir = 'desc';
 let productSortKey = 'createdAt';
 let productSortDir = 'desc';
@@ -408,7 +408,7 @@ function getFilteredSortedKeywords() {
     });
     arr.sort((a, b) => {
         let valA = a[keywordSortKey], valB = b[keywordSortKey];
-        if (keywordSortKey === 'date') { valA = a.date ? new Date(a.date) : 0; valB = b.date ? new Date(b.date) : 0; }
+        if (keywordSortKey === 'createdAt') { valA = a.createdAt ? new Date(a.createdAt) : 0; valB = b.createdAt ? new Date(b.createdAt) : 0; }
         if (valA < valB) return keywordSortDir === 'asc' ? -1 : 1;
         if (valA > valB) return keywordSortDir === 'asc' ? 1 : -1;
         return 0;
@@ -577,7 +577,7 @@ fbaRatingHeader.addEventListener('click', () => {
 
 keywordDateHeader.addEventListener('click', () => {
     keywordSortDir = keywordSortDir === 'desc' ? 'asc' : 'desc';
-    keywordSortKey = 'date';
+    keywordSortKey = 'createdAt';
     updateSortIcon(keywordDateHeader, keywordSortDir);
     renderKeywordTable();
 });
@@ -733,7 +733,7 @@ function renderKeywordRow(item, index) {
     if (selectedKeywordIds.has(item.id)) tr.classList.add('selected');
 
     const keywordUrl = item.url || '#';
-    const date = item.date || 'N/A';
+    const date = item.createdAt ? (new Date(item.createdAt)).toLocaleDateString() : 'N/A';
     const hasUrl = keywordUrl !== '#';
     const keywordLink = hasUrl ? `<a href="${keywordUrl}" target="_blank" rel="noreferrer noopener">${item.keyword || 'N/A'}</a>` : (item.keyword || 'N/A');
     const countLink = hasUrl ? `<a href="${keywordUrl}" target="_blank" rel="noreferrer noopener">${item.count || 'N/A'}</a>` : (item.count || 'N/A');
@@ -759,7 +759,7 @@ function renderProductRow(item, index) {
     const hasUrl = productUrl !== '#';
     const asinLink = hasUrl ? `<a href="${productUrl}" target="_blank" rel="noreferrer noopener">${item.asin || 'N/A'}</a>` : (item.asin || 'N/A');
     const productNameLink = hasUrl ? `<a href="${productUrl}" target="_blank" rel="noreferrer noopener">${item.productName || 'N/A'}</a>` : (item.productName || 'N/A');
-    const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A';
+    const date = item.createdAt ? (new Date(item.createdAt)).toLocaleDateString() : 'N/A';
     const imageHtml = item.mainImageURL ? `
         <div class="product-image-container">
             <img data-src="${item.mainImageURL}" alt="Product Image" class="product-image-thumb" loading="lazy">

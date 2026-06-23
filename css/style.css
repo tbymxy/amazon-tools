@@ -317,7 +317,7 @@ body {
 .view-container#keywords-view .data-table th:nth-child(5),
 .view-container#keywords-view .data-table td:nth-child(5) { width: 10%; } /* 结果数 */
 .view-container#keywords-view .data-table th:nth-child(6),
-.view-container#keywords-view .data-table td:nth-child(6) { width: 15%; } /* 采集日期 */
+.view-container#keywords-view .data-table td:nth-child(6) { width: 15%; } /* 日期 */
 .view-container#keywords-view .data-table th:nth-child(7),
 .view-container#keywords-view .data-table td:nth-child(7) { width: 80px; } /* 操作 */
 
